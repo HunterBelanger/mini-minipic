@@ -58,26 +58,6 @@ variables:
 
 # _____________________________________________________________________________
 #
-# Test Mini-PIC using OpenMP On Ruche Cascadelakes
-# _____________________________________________________________________________
-
-test_omp:
-  # only: *default_run
-  tags:
-    - ruche
-  stage: test
-  before_script:
-    # - source ${HOME}/env/kokkos_omp_cpu
-    - source ${WORKDIR}/gitlab-ci_runs/env/oneapi
-  script:
-    - cp -r tests tests_omp
-    - cd tests_omp
-    - srun --time=00:20:00 --cpus-per-task=8 --ntasks=1 --partition=cpu_short python3 run.py -c icpx --benchmarks=$BENCHMARKS # --save-timers
-  # dependencies:
-  #   - build_kokkos_v100
-
-# _____________________________________________________________________________
-#
 # Test Mini-PIC using Kokkos OpenMP for CPU on Ruche
 # _____________________________________________________________________________
 

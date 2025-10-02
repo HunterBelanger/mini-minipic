@@ -228,9 +228,7 @@ public:
     ny_m  = ny;
     nz_m  = nz;
     nynz_ = ny * nz;
-#if defined(__MINIPIC_KOKKOS_COMMON__)
     data_m.resize(nx, ny, nz);
-#endif
   }
 
   // _________________________________________________________________________________________

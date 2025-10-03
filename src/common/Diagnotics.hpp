@@ -435,7 +435,6 @@ void fields(Params &params, ElectroMagn &em, unsigned int it, std::string format
 
   for (auto ifield = 0; ifield < field_list.size(); ++ifield) {
 
-#if defined(__MINIPIC_KOKKOS_COMMON__) || defined(__SHAMAN__)
     const int nx = field_list[ifield]->nx();
     const int ny = field_list[ifield]->ny();
     const int nz = field_list[ifield]->nz();
@@ -450,9 +449,6 @@ void fields(Params &params, ElectroMagn &em, unsigned int it, std::string format
         }
       }
     }
-#else
-    double *tmp_grid = field_list[ifield]->get_raw_pointer(minipic::host);
-#endif
 
     // Binary format
     if (format == "binary" or format == "bin") {
@@ -484,11 +480,7 @@ void fields(Params &params, ElectroMagn &em, unsigned int it, std::string format
         tmp_grid);
     }
 
-#if defined(__MINIPIC_KOKKOS_COMMON__) || defined(__SHAMAN__)
-
     delete[] tmp_grid;
-
-#endif
   }
 }
 

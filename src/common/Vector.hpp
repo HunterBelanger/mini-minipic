@@ -29,8 +29,6 @@ public:
   decltype(Kokkos::create_mirror_view(data_)) data_h_;
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
   Kokkos::View<T *, Kokkos::SharedSpace> data_;
-#else
-  std::vector<T> data_;
 #endif
 
   // ______________________________________________________________________
@@ -71,8 +69,6 @@ public:
     data_h_ = Kokkos::create_mirror_view(data_);
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
     data_ = Kokkos::View<T *, Kokkos::SharedSpace>(name, size);
-#else
-    data_.resize(size);
 #endif
   }
 
@@ -86,8 +82,6 @@ public:
     return data_h_(i);
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
     return data_(i);
-#else
-    return data_[i];
 #endif
   }
 
@@ -101,8 +95,6 @@ public:
     return data_h_(i);
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
     return data_(i);
-#else
-    return data_[i];
 #endif
   }
 
@@ -116,8 +108,6 @@ public:
     return data_h_(i);
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
     return data_(i);
-#else
-    return data_[i];
 #endif
   }
 
@@ -140,19 +130,11 @@ public:
       return data_h_.data();
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
       return data_.data();
-#else
-      return data_.data();
 #endif
 
       // Device
     } else if constexpr (std::is_same<T_space, minipic::Device>::value) {
-#if defined(__MINIPIC_KOKKOS_NON_UNIFIED__)
       return data_.data();
-#elif defined(__MINIPIC_KOKKOS_UNIFIED__)
-      return data_.data();
-#else
-      return data_.data();
-#endif
 
     } else {
       return nullptr;
@@ -180,11 +162,7 @@ public:
                     std::is_same<T_space, minipic::Device>::value,
                   "Must be minipic::host or minipic::device");
 
-#if defined(__MINIPIC_KOKKOS__)
     Kokkos::resize(data_, new_size);
-#else
-    data_.resize(new_size);
-#endif
     size_ = new_size;
   }
 
@@ -207,11 +185,6 @@ public:
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
     for (auto ip = size_; ip < new_size; ++ip) {
       data_(ip) = value;
-    }
-#else
-    for (auto ip = size_; ip < new_size; ++ip) {
-      data_[ip] = value;
-    }
 #endif
   }
 
@@ -222,14 +195,6 @@ public:
   // ______________________________________________________________________
   void clear() {
     size_ = 0;
-#if defined(__MINIPIC_KOKKOS_COMMON__)
-    // nothing
-#elif defined(__MINIPIC_THRUST__)
-    host_data_.clear();
-    device_data_.clear();
-#else
-    data_.clear();
-#endif
   }
 
   // ______________________________________________________________________
@@ -250,10 +215,6 @@ public:
         data_h_(i) = v;
       }
 
-      // quest
-      // Boucle non async
-      // Kokkos::fence();
-
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
       Kokkos::Experimental::fill(Kokkos::DefaultHostExecutionSpace(),
                                  Kokkos::Experimental::begin(data_),
@@ -261,8 +222,6 @@ public:
                                  v);
       Kokkos::fence();
 
-#else
-      std::fill(data_.begin(), data_.end(), v);
 #endif
 
     } else if constexpr (std::is_same<T_space, minipic::Device>::value) {
@@ -283,22 +242,7 @@ public:
                                  Kokkos::Experimental::end(data_),
                                  v);
 
-      // Kokkos::Experimental::fill(Kokkos::DefaultHostExecutionSpace(),
-      // Kokkos::Experimental::begin(data_), Kokkos::Experimental::end(data_), v);
-
-      // // Fill on device
-      // Kokkos::parallel_for(
-      //   size_,
-      //   KOKKOS_CLASS_LAMBDA(const int ip) { data_(ip) = v; });
-
-      // // Fill on host
-      // for (auto i = 0; i < size_; ++i) {
-      //   data_(i) = v;
-      // }
-
       Kokkos::fence();
-#else
-      std::fill(data_.begin(), data_.end(), v);
 #endif
 
     } else {
@@ -343,17 +287,10 @@ public:
         sum);
 
       Kokkos::fence();
-
-#else
-      for (size_t i = 0; i < size_; i++) {
-        sum += pow(data_[i], power);
-      }
 #endif
 
       // ---> Device case
     } else if constexpr (std::is_same<T_space, minipic::Device>::value) {
-
-#if defined(__MINIPIC_KOKKOS_COMMON__)
 
 #if defined(__MINIPIC_KOKKOS__)
       typename Kokkos::View<T *, Kokkos::DefaultExecutionSpace::memory_space> view = data_;
@@ -368,12 +305,6 @@ public:
         sum);
 
       Kokkos::fence();
-
-#else
-      for (size_t i = 0; i < size_; i++) {
-        sum += pow(data_[i], power);
-      }
-#endif
 
     } else {
       std::cerr << "Vector::sum: Invalid space" << std::endl;
@@ -427,11 +358,6 @@ using device_vector_t = Kokkos::View<mini_float *, Kokkos::DefaultExecutionSpace
 
 using vector_t        = Kokkos::View<mini_float *, Kokkos::SharedSpace>;
 using device_vector_t = Kokkos::View<mini_float *, Kokkos::SharedSpace>;
-
-#else
-
-using vector_t        = Vector<mini_float>;
-using device_vector_t = Vector<mini_float>;
 
 #endif
 

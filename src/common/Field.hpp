@@ -40,8 +40,8 @@ public:
 
 #if defined(__MINIPIC_KOKKOS__)
 
-  Kokkos::View<T ***, Kokkos::DefaultExecutionSpace::memory_space> data_m;
-  decltype(create_mirror_view(data_m)) data_m_h;
+  Kokkos::View<T ***> data_m;
+  typename decltype(data_m)::host_mirror_type data_m_h;
 
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
 
@@ -200,7 +200,7 @@ public:
     }
 
 #if defined(__MINIPIC_KOKKOS__)
-    data_m = Kokkos::View<T ***, Kokkos::DefaultExecutionSpace::memory_space>(name, nx, ny, nz);
+    data_m = Kokkos::View<T ***>(name, nx, ny, nz);
     data_m_h = create_mirror_view(data_m);
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
     data_m = Kokkos::View<T ***, Kokkos::SharedSpace>(name, nx, ny, nz);
@@ -430,9 +430,8 @@ public:
 
 #if defined(__MINIPIC_KOKKOS__)
 
-using device_field_t = Kokkos::View<mini_float ***, Kokkos::DefaultExecutionSpace::memory_space>;
-//using field_t        = Kokkos::View<mini_float ***, Kokkos::DefaultHostExecutionSpace::memory_space>;
-using field_t        = decltype(create_mirror_view(device_field_t{}));
+using device_field_t = Kokkos::View<mini_float ***>;
+using field_t        = typename device_field_t::host_mirror_type;
 
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
 

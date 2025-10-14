@@ -107,12 +107,6 @@ void Patch::allocate(Params &param, const int i, const int j, const int k) {
   // Alloc vector for each species
   if (n_species_m > 0) {
     particles_m.resize(n_species_m);
-    particles_to_move_m.resize(n_species_m);
-
-    // masks_m.resize(n_species_m);
-    vec_Jx_m.resize(n_species_m);
-    vec_Jy_m.resize(n_species_m);
-    vec_Jz_m.resize(n_species_m);
 
     // Alloc projected flags
     projected_.resize(n_species_m);
@@ -127,35 +121,8 @@ void Patch::allocate(Params &param, const int i, const int j, const int k) {
                              param.temp_[is],
                              n_particles,
                              param.inv_cell_volume);
-
-    // Alloc a tag for each particle, to tag particles which leave the patch and init it at false
-    // masks_m[is].resize(n_particles, 0);
-
-    // Alloc empty buffers to exchange particles between patch, 26 neighbors in 3D
-    particles_to_move_m[is].resize(26);
-
-    for (auto ibuffer = 0; ibuffer < 26; ibuffer++) {
-      particles_to_move_m[is][ibuffer].allocate(param.charge_[is],
-                                                param.mass_[is],
-                                                param.temp_[is],
-                                                0,
-                                                param.inv_cell_volume);
-
-      particles_to_move_m[is][ibuffer].with_electromagnetic_fields_ = false;
-    }
-
-    // Alloc local fields, one for each species
-    // Must have 2 ghost cells in the primal direction for the projection
-    vec_Jx_m[is].allocate(nx_d_m, ny_p_m + 2, nz_p_m + 2, 0.0, 1, 0, 0, "Jx");
-    vec_Jy_m[is].allocate(nx_p_m + 2, ny_d_m, nz_p_m + 2, 0.0, 0, 1, 0, "Jy");
-    vec_Jz_m[is].allocate(nx_p_m + 2, ny_p_m + 2, nz_d_m, 0.0, 0, 0, 1, "Jz");
-
   }
 
-  // Alloc local fields
-  // Jx_m.allocate(nx_d_m, ny_p_m, nz_p_m);
-  // Jy_m.allocate(nx_p_m, ny_d_m, nz_p_m);
-  // Jz_m.allocate(nx_p_m, ny_p_m, nz_d_m);
 }
 
 // ___________________________________________________________

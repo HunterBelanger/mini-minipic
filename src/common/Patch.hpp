@@ -100,11 +100,6 @@ public:
   //! Local current field
   Field<mini_float> Jx_m, Jy_m, Jz_m;
 
-  //! Buffers to exchange particles between patchs
-  std::vector<std::vector<Particles<mini_float>>> particles_to_move_m;
-  //! Tag particles which leave the patch
-  //   std::vector<std::vector<int>> masks_m;
-
   // _____________________________________________________________
   //
   //! \brief Initialize and allocate properties for the patch

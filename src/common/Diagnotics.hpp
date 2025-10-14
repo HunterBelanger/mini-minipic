@@ -263,7 +263,7 @@ void particle_binning(std::string diag_name,
                          patches[i_patch].particles_m[is].mz_h(ip) *
                            patches[i_patch].particles_m[is].mz_h(ip));
           } else if (axis_code[idim] == 1) {
-            value = patches[i_patch].particles_m[is].x._h(ip);
+            value = patches[i_patch].particles_m[is].x_.h(ip);
           } else if (axis_code[idim] == 2) {
             value = patches[i_patch].particles_m[is].y_h(ip);
           } else if (axis_code[idim] == 3) {

@@ -105,8 +105,6 @@ auto interpolate(ElectroMagn &em, std::vector<Particles<mini_float>> &particles)
 
           Eyp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
         }
-
-        // // //particles_m[is].Ey_.d_view(part) = compute_interpolation(ixp, b, izp, coeffs, Ey);
         // Ez (p, p, d)
         {
           const double coeffs[3] = {ixn, iyn, izn + 0.5};
@@ -124,22 +122,11 @@ auto interpolate(ElectroMagn &em, std::vector<Particles<mini_float>> &particles)
 
           Ezp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
         }
-        // particles_m[is].Ez_.d_view(part) = compute_interpolation(ixp, iyp, g, coeffs, Ez);
 
         // interpolation magnetic field
         // Bx (p, d, d)
         {
           const double coeffs[3] = {ixn, iyn + 0.5, izn + 0.5};
-
-          // Bxp(part)              = compute_interpolation(coeffs,
-          //                                   Bx(ixp, iyd, izd),
-          //                                   Bx(ixp, iyd, izd + 1),
-          //                                   Bx(ixp, iyd + 1, izd),
-          //                                   Bx(ixp, iyd + 1, izd + 1),
-          //                                   Bx(ixp + 1, iyd, izd),
-          //                                   Bx(ixp + 1, iyd, izd + 1),
-          //                                   Bx(ixp + 1, iyd + 1, izd),
-          //                                   Bx(ixp + 1, iyd + 1, izd + 1));
 
           const double v00 =
             Bx(ixp, iyd, izd) * (1 - coeffs[0]) + Bx(ixp + 1, iyd, izd) * coeffs[0];
@@ -154,7 +141,6 @@ auto interpolate(ElectroMagn &em, std::vector<Particles<mini_float>> &particles)
 
           Bxp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
         }
-        // particles_m[is].Bx_.d_view(part) = compute_interpolation(ixp, b, g, coeffs, Bx);
 
         // By (d, p, d)
         {
@@ -173,7 +159,6 @@ auto interpolate(ElectroMagn &em, std::vector<Particles<mini_float>> &particles)
 
           Byp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
         }
-        // particles_m[is].By_.d_view(part) = compute_interpolation(a, iyp, g, coeffs, By);
 
         // Bz (d, d, p)
         {
@@ -192,7 +177,7 @@ auto interpolate(ElectroMagn &em, std::vector<Particles<mini_float>> &particles)
 
           Bzp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
         }
-        // particles_m[is].Bz_.d_view(part) = compute_interpolation(a, b, izp, coeffs, Bz);
+
       } // End for each particle
 
     ); // end KOKKOS PARALLEL
@@ -569,19 +554,6 @@ void project(Params &params, ElectroMagn &em, std::vector<Particles<mini_float>>
         const int ixd = (int)Kokkos::floor(posxn - 0.5); //- i_patch_topology_m * nx_cells_m;
         const int iyd = (int)Kokkos::floor(posyn - 0.5); //- j_patch_topology_m * ny_cells_m;
         const int izd = (int)Kokkos::floor(poszn - 0.5); //- k_patch_topology_m * nz_cells_m;
-
-#if (__MINIPIC_DEBUG__)
-        // Check if the indexes are in the correct range
-        if (ixd < 0 || ixd + 1 >= nx_Jx || iyp < 0 || iyp + 1 >= ny_Jx || izp < 0 ||
-            izp + 1 >= nz_Jx) {
-          Kokkos::printf("Error: part = %d\n", part);
-          Kokkos::printf("Error: ixp = %d, iyp = %d, izp = %d\n", ixp, iyp, izp);
-          Kokkos::printf("Error: posxn = %f, posyn = %f, poszn = %f\n", posxn, posyn, poszn);
-          Kokkos::printf("Error: x = %f, y = %f, z = %f\n", x(part), y(part), z(part));
-          Kokkos::printf("Error: vx = %f, vy = %f, vz = %f\n", vx, vy, vz);
-          Kokkos::printf("Error: gamma_inv = %f\n", gamma_inv);
-        }
-#endif
 
         // Projection particle on currant field
         // Compute interpolation coeff, p = primal, d = dual

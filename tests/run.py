@@ -13,6 +13,7 @@ import argparse
 import importlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -24,21 +25,20 @@ import time
 configuration_list = {
     "kokkos": {
         "compiler": "clang++",
-        "cmake": "-DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release",
-        "env": "OMP_PROC_BIND=spread",
-        "prefix": "",
-        "args": ["", "", "", "-it 10000", "-it 10000"],
+        "cmake": ["-DCMAKE_VERBOSE_MAKEFILE=ON", "-DCMAKE_BUILD_TYPE=Release"],
+        "env": {"OMP_PROC_BIND": "spread"},
+        "prefix": [],
+        "args": [["-it", "10000"], ["-it", "10000"], ["-it", "10000"]],
         "exe_name": "minipic",
         "threads": [8, 8, 8, 1, 1],
         "benchmarks": ["default_gpu", "beam", "antenna"],
     },
     "kokkos_gpu": {
         "compiler": "g++",
-        "cmake": "-DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release",
-        #  'cmake' : '-DCMAKE_VERBOSE_MAKEFILE=ON -DBACKEND="kokkos" -DDEVICE="nvidia_v100"',
-        "env": "OMP_PROC_BIND=spread",
-        "prefix": "",
-        "args": ["", "", "", "", ""],
+        "cmake": ["-DCMAKE_VERBOSE_MAKEFILE=ON", "-DCMAKE_BUILD_TYPE=Release"],
+        "env": {"OMP_PROC_BIND": "spread"},
+        "prefix": [],
+        "args": [["-it", "10000"], ["-it", "10000"], ["-it", "10000"]],
         "exe_name": "minipic",
         "threads": [1, 1, 1],
         "benchmarks": ["default_gpu", "beam", "antenna"],
@@ -66,7 +66,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "-g",
     "--config",
-    default="openmp",
+    default="kokkos",
     help=" configuration choice: sequential, openmp (default), kokkos, kokkos_gpu",
 )
 parser.add_argument("-c", "--compiler", help=" custom compiler choice")
@@ -166,15 +166,17 @@ if args.threads != None:
             selected_config["threads"].append(int(args.threads))
 
 # Environment
-if args.env != None:
-    selected_config["env"] += " " + args.env
+if args.env:
+    for local_env in env.split():
+        key, value = local_env.split("=")
+        selected_config["env"][key] = value
 
 # Prefix
-if args.prefix != None:
-    selected_config["prefix"] += " " + args.prefix
+if args.prefix:
+    selected_config["prefix"].extend(args.prefix.split())
 
 # Select arguments
-if args.arguments != None:
+if args.arguments:
 
     if "," in args.arguments:
 
@@ -195,30 +197,30 @@ else:
         selected_config["args"].append("")
 
 # Select device
-if (args.device != None) and (args.device != ""):
+if args.device:
 
-    cmake_args = selected_config["cmake"].split(" ")
+    cmake_args = selected_config["cmake"]
 
     # remove the device option if exists
     cmake_args = [arg for arg in cmake_args if not arg.startswith("-DDEVICE=")]
     cmake_args.append("-DDEVICE={}".format(args.device))
     # add the new device option
-    selected_config["cmake"] = " ".join(cmake_args)
+    selected_config["cmake"] = cmake_args
 
 # Change backend
-if (args.backend != None) and (args.backend != ""):
-    cmake_args = selected_config["cmake"].split(" ")
+if args.backend:
+    cmake_args = selected_config["cmake"]
 
     # remove the backend option if exists
     cmake_args = [arg for arg in cmake_args if not arg.startswith("-DBACKEND=")]
     cmake_args.append("-DBACKEND={}".format(args.backend))
     # add the new device option
-    selected_config["cmake"] = " ".join(cmake_args)
+    selected_config["cmake"] = cmake_args
 
 # Add custom cmake arguments
-if (args.cmake_args != None) and (args.cmake_args != ""):
+if args.cmake_args:
 
-    selected_config["cmake"] = selected_config["cmake"] + " " + args.cmake_args
+    selected_config["cmake"].extend(args.cmake_args.split())
 
 # threshold
 threshold = args.threshold
@@ -239,8 +241,8 @@ assert all(
 
 
 # Get local path
-working_dir = os.getcwd() + "/"
-root_dir = working_dir + "/../"
+working_dir = os.path.dirname(__file__)
+root_dir = os.path.dirname(working_dir)
 
 # Add validation path to the PYTHONPATH
 sys.path.append("{}/validation".format(root_dir))
@@ -354,7 +356,7 @@ for ib, benchmark in enumerate(selected_config["benchmarks"]):
     # bench parameters
 
     nb_threads = selected_config["threads"][ib]
-    bench_dir = working_dir + benchmark + "/"
+    bench_dir = os.path.join(working_dir, benchmark)
 
     print("")
     line(terminal_size)
@@ -365,14 +367,14 @@ for ib, benchmark in enumerate(selected_config["benchmarks"]):
 
     # Create a directory for this benchmark
     if os.path.exists(bench_dir):
-        os.system("rm -rf " + bench_dir)
+        shutil.rmtree(bench_dir, ignore_errors=True)
     os.makedirs(bench_dir)
 
     # Go to the bench directory
     os.chdir(bench_dir)
 
     # Copy the main from src
-    os.system("cp " + root_dir + "src/main.cpp .")
+    shutil.copy(os.path.join(root_dir, "src", "main.cpp"), ".")
 
     # Change include
     with open("main.cpp", "r") as file:
@@ -393,24 +395,24 @@ for ib, benchmark in enumerate(selected_config["benchmarks"]):
     with open("main.cpp", "w") as file:
         file.writelines(main_file)
 
-    # Copy Cmake file
-    # os.system("cp ./../CMakeLists.txt .")
-
     # Compile
 
-    cmake_command = "cmake ../../ -DCMAKE_BUILD_TYPE=Release -DTEST=ON"
-    # cmake_command += " -DCMAKE_INSTALL_PREFIX={}".format(bench_dir)
-    if compiler != None:
-        cmake_command += " -DCMAKE_CXX_COMPILER={}".format(compiler)
-    cmake_command += " {}".format(cmake)
+    cmake_command = ["cmake", "../..", "-DCMAKE_BUILD_TYPE=Release", "-DTEST=ON"]
+    if compiler:
+        cmake_command.append("-DCMAKE_CXX_COMPILER={}".format(compiler))
+    cmake_command.extend(cmake)
 
     print("")
     print("   -> Compilation")
     print("")
-    print(cmake_command)
+    print(" ".join(cmake_command))
 
-    os.system(cmake_command)
-    os.system("make -j 4")
+    subprocess.run(cmake_command)
+
+    make_command = ["cmake", "--build", ".", "--parallel", "4"]
+    print(" ".join(make_command))
+
+    subprocess.run(make_command)
 
     # Check
     exe_exists = os.path.exists("./{}".format(executable_name))
@@ -419,24 +421,27 @@ for ib, benchmark in enumerate(selected_config["benchmarks"]):
     # ____________________________________________________________________________
     # Execution
 
-    if not (compile_only):
-
-        # os.system("{} ./{} {}".format(prefix, executable_name, args))
+    if not compile_only:
 
         # if benchmark has key threads
-        env = " OMP_NUM_THREADS={} ".format(nb_threads) + env
+        current_env = {"OMP_NUM_THREADS": str(nb_threads)}
+        current_env.update(env)
 
         print("")
         print("   -> Execution ")
         print("")
 
-        subprocess_command = [
-            "{} {} ./{} {}".format(env, prefix, executable_name, args)
+        run_command = [
+            "./{}".format(executable_name),
+            *args,
         ]  # srun numactl --interleave=all
+        if prefix:
+            run_command = [*(prefix.split()), *run_command]
 
-        print(subprocess_command)
+        env_str = " ".join("{}={}".format(k, v) for k, v in current_env.items())
+        print(env_str, " ".join(run_command))
 
-        subprocess.run(subprocess_command, shell=True, check=False)
+        subprocess.run(run_command, check=False, env=current_env)
 
         # ____________________________________________________________________________
         # Check results
@@ -536,4 +541,4 @@ for ib, benchmark in enumerate(selected_config["benchmarks"]):
         print("")
         print("   -> Cleaning")
 
-        os.system("rm -rf " + bench_dir)
+        shutil.rmtree(bench_dir, ignore_errors=True)

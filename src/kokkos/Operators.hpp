@@ -384,9 +384,9 @@ auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> vo
 
         unsigned int n_particles = particles[is].size();
 
-        vector_t x = particles[is].x_.data_;
-        vector_t y = particles[is].y_.data_;
-        vector_t z = particles[is].z_.data_;
+        device_vector_t x = particles[is].x_.data_;
+        device_vector_t y = particles[is].y_.data_;
+        device_vector_t z = particles[is].z_.data_;
 
         Kokkos::parallel_for(
           n_particles,
@@ -417,13 +417,13 @@ auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> vo
 
         unsigned int n_particles = particles[is].size();
 
-        vector_t x = particles[is].x_.data_;
-        vector_t y = particles[is].y_.data_;
-        vector_t z = particles[is].z_.data_;
+        device_vector_t x = particles[is].x_.data_;
+        device_vector_t y = particles[is].y_.data_;
+        device_vector_t z = particles[is].z_.data_;
 
-        vector_t mx = particles[is].mx_.data_;
-        vector_t my = particles[is].my_.data_;
-        vector_t mz = particles[is].mz_.data_;
+        device_vector_t mx = particles[is].mx_.data_;
+        device_vector_t my = particles[is].my_.data_;
+        device_vector_t mz = particles[is].mz_.data_;
 
         Kokkos::parallel_for(
           n_particles,
@@ -812,7 +812,7 @@ void currentBC(Params &params, ElectroMagn &em) {
       });
 
     Kokkos::parallel_for(
-      mdrange_policy({0, 0}, {nx_Jx, nx_Jx}),
+      mdrange_policy({0, 0}, {nx_Jy, ny_Jy}),
       KOKKOS_LAMBDA(const int ix, const int iy) {
         Jy(ix, iy, 0) += Jy(ix, iy, nz_Jy - 2);
         Jy(ix, iy, nz_Jy - 2) = Jy(ix, iy, 0);

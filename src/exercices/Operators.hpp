@@ -371,13 +371,11 @@ auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> vo
 
       unsigned int n_particles = particles[is].size();
 
-      device_vector_t x = particles[is].x_.data_;
-      device_vector_t y = particles[is].y_.data_;
-      device_vector_t z = particles[is].z_.data_;
+      vector_t x = particles[is].x_.data_h_;
+      vector_t y = particles[is].y_.data_h_;
+      vector_t z = particles[is].z_.data_h_;
 
-      Kokkos::parallel_for(
-        n_particles,
-        KOKKOS_LAMBDA(const int part) {
+      for (int part = 0; part < n_particles; ++part) {
           mini_float *pos[3] = {&x(part), &y(part), &z(part)};
 
           for (int d = 0; d < 3; d++) {
@@ -394,10 +392,6 @@ auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> vo
           
         } // End loop on particles
 
-      );
-
-      Kokkos::fence();
-
     } // End loop on species
 
     // Reflective conditions
@@ -406,17 +400,15 @@ auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> vo
 
       unsigned int n_particles = particles[is].size();
 
-      device_vector_t x = particles[is].x_.data_;
-      device_vector_t y = particles[is].y_.data_;
-      device_vector_t z = particles[is].z_.data_;
+      vector_t x = particles[is].x_.data_h_;
+      vector_t y = particles[is].y_.data_h_;
+      vector_t z = particles[is].z_.data_h_;
 
-      device_vector_t mx = particles[is].mx_.data_;
-      device_vector_t my = particles[is].my_.data_;
-      device_vector_t mz = particles[is].mz_.data_;
+      vector_t mx = particles[is].mx_.data_h_;
+      vector_t my = particles[is].my_.data_h_;
+      vector_t mz = particles[is].mz_.data_h_;
 
-      Kokkos::parallel_for(
-        n_particles,
-        KOKKOS_LAMBDA(const int part) {
+      for(int part = 0; part < n_particles; ++part) {
           mini_float *pos[3] = {&x(part), &y(part), &z(part)};
 
           mini_float *momentum[3] = {&mx(part), &my(part), &mz(part)};
@@ -432,15 +424,14 @@ auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> vo
 
               *pos[d]      = 2 * inf_global[d] - *pos[d];
               *momentum[d] = -*momentum[d];
+
             }
           }
+
         } // End loop on particles
 
-      );
-
-      Kokkos::fence();
-
       } // End loop on species
+
     } // if type of conditions
 }
 

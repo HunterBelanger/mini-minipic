@@ -486,47 +486,37 @@ public:
       DEBUG("  -> stop reset current");
     }
 
-      // Interpolate from global field to particles
-      DEBUG("  -> start interpolate ");
+    // Interpolate from global field to particles
+    DEBUG("  -> start interpolate ");
 
-      operators::interpolate(em_, particles_m);
+    operators::interpolate(em_, particles_m);
 
-      DEBUG("  -> stop interpolate");
+    DEBUG("  -> stop interpolate");
 
-      // Push all particles
-      DEBUG("  -> start push ");
+    // Push all particles
+    DEBUG("  -> start push ");
 
-      operators::push(particles_m, params.dt);
+    operators::push(particles_m, params.dt);
 
-      DEBUG("  -> stop push");
+    DEBUG("  -> stop push");
 
-      // Do boundary conditions on global domain
-      DEBUG("  -> Patch 0: start pushBC");
+    // Do boundary conditions on global domain
+    DEBUG("  -> Patch 0: start pushBC");
 
-      operators::pushBC(params, particles_m);
+    operators::pushBC(params, particles_m);
 
-      DEBUG("  -> stop pushBC");
+    DEBUG("  -> stop pushBC");
 
+    // Projection in local field
+    if (params.current_projection) {
 
-#if defined(__MINIPIC_DEBUG__)
-      // check particles
-      for (auto is = 0; is < params.species_names_.size(); ++is) {
-        patches_[idx_patch].particles_m[is].check(patches_[idx_patch].inf_m[0],
-                                                  patches_[idx_patch].sup_m[0],
-                                                  patches_[idx_patch].inf_m[1],
-                                                  patches_[idx_patch].sup_m[1],
-                                                  patches_[idx_patch].inf_m[2],
-                                                  patches_[idx_patch].sup_m[2]);
-      }
-#endif
+      // Projection directly in the global grid
+      DEBUG("  ->  start projection");
 
-      // Projection in local field
-      if (params.current_projection) {
+      operators::project(params, em_, particles_m);
 
-        // Projection directly in the global grid
-        operators::project(params, em_, particles_m);
-
-      }
+      DEBUG("  ->  stop projection");
+    }
 
     // __________________________________________________________________
     // Sum all species contribution in the local and global current grids

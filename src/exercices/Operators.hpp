@@ -12,12 +12,12 @@ namespace operators {
 
 // ______________________________________________________________________________
 //
-//! \brief Interpolation operator at the patch level :
+//! \brief Interpolation operator :
 //! interpolate EM fields from global grid for each particle
 //! \param[in] em  global electromagnetic fields
-//! \param[in] patch  patch data structure
+//! \param[in] particles  vector of particle species
 // ______________________________________________________________________________
-auto interpolate(ElectroMagn &em, Patch &patch) -> void {
+auto interpolate(ElectroMagn &em, std::vector<Particles<mini_float>> &particles) -> void {
 
   const auto inv_dx_m = em.inv_dx_m;
   const auto inv_dy_m = em.inv_dy_m;
@@ -25,9 +25,9 @@ auto interpolate(ElectroMagn &em, Patch &patch) -> void {
 
   // em.Ex_m.print();
 
-  for (int is = 0; is < patch.n_species_m; is++) {
+  for (size_t is = 0; is < particles.size(); is++) {
 
-    const int n_particles = patch.particles_m[is].size();
+    const int n_particles = particles[is].size();
 
     field_t Ex = em.Ex_m.data_m_h;
     field_t Ey = em.Ey_m.data_m_h;
@@ -37,245 +37,181 @@ auto interpolate(ElectroMagn &em, Patch &patch) -> void {
     field_t By = em.By_m.data_m_h;
     field_t Bz = em.Bz_m.data_m_h;
 
-    vector_t x = patch.particles_m[is].x_.data_h_;
-    vector_t y = patch.particles_m[is].y_.data_h_;
-    vector_t z = patch.particles_m[is].z_.data_h_;
+    vector_t x = particles[is].x_.data_h_;
+    vector_t y = particles[is].y_.data_h_;
+    vector_t z = particles[is].z_.data_h_;
 
-    vector_t Exp = patch.particles_m[is].Ex_.data_h_;
-    vector_t Eyp = patch.particles_m[is].Ey_.data_h_;
-    vector_t Ezp = patch.particles_m[is].Ez_.data_h_;
+    vector_t Exp = particles[is].Ex_.data_h_;
+    vector_t Eyp = particles[is].Ey_.data_h_;
+    vector_t Ezp = particles[is].Ez_.data_h_;
 
-    vector_t Bxp = patch.particles_m[is].Bx_.data_h_;
-    vector_t Byp = patch.particles_m[is].By_.data_h_;
-    vector_t Bzp = patch.particles_m[is].Bz_.data_h_;
+    vector_t Bxp = particles[is].Bx_.data_h_;
+    vector_t Byp = particles[is].By_.data_h_;
+    vector_t Bzp = particles[is].Bz_.data_h_;
 
     for (int part = 0; part < n_particles; ++part) {
-        // // Calculate normalized positions
-        const double ixn = x(part) * inv_dx_m;
-        const double iyn = y(part) * inv_dy_m;
-        const double izn = z(part) * inv_dz_m;
+      // // Calculate normalized positions
+      const double ixn = x(part) * inv_dx_m;
+      const double iyn = y(part) * inv_dy_m;
+      const double izn = z(part) * inv_dz_m;
 
-        // // Compute indexes in global primal grid
-        const unsigned int ixp = floor(ixn);
-        const unsigned int iyp = floor(iyn);
-        const unsigned int izp = floor(izn);
+      // // Compute indexes in global primal grid
+      const unsigned int ixp = floor(ixn);
+      const unsigned int iyp = floor(iyn);
+      const unsigned int izp = floor(izn);
 
-        // Compute indexes in global dual grid
-        const unsigned int ixd = floor(ixn + 0.5);
-        const unsigned int iyd = floor(iyn + 0.5);
-        const unsigned int izd = floor(izn + 0.5);
+      // Compute indexes in global dual grid
+      const unsigned int ixd = floor(ixn + 0.5);
+      const unsigned int iyd = floor(iyn + 0.5);
+      const unsigned int izd = floor(izn + 0.5);
 
-        // Compute interpolation coeff, p = primal, d = dual
+      // Compute interpolation coeff, p = primal, d = dual
 
-        double coeffs[3] = {ixn + 0.5, iyn, izn};
+      // Ex (d, p, p)
+      {
+        const double coeffs[3] = {ixn + 0.5, iyn, izn};
 
-        // interpolation electric field
-        // Ex (d, p , p)
-        // {
-        //   const double coeffs[3] = {ixn + 0.5, iyn, izn};
-        //   Exp(part)              = compute_interpolation(coeffs,
-        //                                     Ex(ixd, iyp, izp),
-        //                                     Ex(ixd, iyp, izp + 1),
-        //                                     Ex(ixd, iyp + 1, izp),
-        //                                     Ex(ixd, iyp + 1, izp + 1),
-        //                                     Ex(ixd + 1, iyp, izp),
-        //                                     Ex(ixd + 1, iyp, izp + 1),
-        //                                     Ex(ixd + 1, iyp + 1, izp),
-        //                                     Ex(ixd + 1, iyp + 1, izp + 1));
-        // }
-        {
-          const double v00 =
-            Ex(ixd, iyp, izp) * (1 - coeffs[0]) + Ex(ixd + 1, iyp, izp) * coeffs[0];
-          const double v01 =
-            Ex(ixd, iyp, izp + 1) * (1 - coeffs[0]) + Ex(ixd + 1, iyp, izp + 1) * coeffs[0];
-          const double v10 =
-            Ex(ixd, iyp + 1, izp) * (1 - coeffs[0]) + Ex(ixd + 1, iyp + 1, izp) * coeffs[0];
-          const double v11 =
-            Ex(ixd, iyp + 1, izp + 1) * (1 - coeffs[0]) + Ex(ixd + 1, iyp + 1, izp + 1) * coeffs[0];
-          const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
-          const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+        const double v00 =
+          Ex(ixd, iyp, izp) * (1 - coeffs[0]) + Ex(ixd + 1, iyp, izp) * coeffs[0];
+        const double v01 =
+          Ex(ixd, iyp, izp + 1) * (1 - coeffs[0]) + Ex(ixd + 1, iyp, izp + 1) * coeffs[0];
+        const double v10 =
+          Ex(ixd, iyp + 1, izp) * (1 - coeffs[0]) + Ex(ixd + 1, iyp + 1, izp) * coeffs[0];
+        const double v11 =
+          Ex(ixd, iyp + 1, izp + 1) * (1 - coeffs[0]) + Ex(ixd + 1, iyp + 1, izp + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-          Exp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
-        }
+        Exp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      }
 
-        // Ey (p, d, p)
-        {
-          const double coeffs[3] = {ixn, iyn + 0.5, izn};
-          //   Eyp(part)              = compute_interpolation(coeffs,
-          //                                     Ey(ixp, iyd, izp),
-          //                                     Ey(ixp, iyd, izp + 1),
-          //                                     Ey(ixp, iyd + 1, izp),
-          //                                     Ey(ixp, iyd + 1, izp + 1),
-          //                                     Ey(ixp + 1, iyd, izp),
-          //                                     Ey(ixp + 1, iyd, izp + 1),
-          //                                     Ey(ixp + 1, iyd + 1, izp),
-          //                                     Ey(ixp + 1, iyd + 1, izp + 1));
+      // Ey (p, d, p)
+      {
+        const double coeffs[3] = {ixn, iyn + 0.5, izn};
 
-          const double v00 =
-            Ey(ixp, iyd, izp) * (1 - coeffs[0]) + Ey(ixp + 1, iyd, izp) * coeffs[0];
-          const double v01 =
-            Ey(ixp, iyd, izp + 1) * (1 - coeffs[0]) + Ey(ixp + 1, iyd, izp + 1) * coeffs[0];
-          const double v10 =
-            Ey(ixp, iyd + 1, izp) * (1 - coeffs[0]) + Ey(ixp + 1, iyd + 1, izp) * coeffs[0];
-          const double v11 =
-            Ey(ixp, iyd + 1, izp + 1) * (1 - coeffs[0]) + Ey(ixp + 1, iyd + 1, izp + 1) * coeffs[0];
-          const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
-          const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+        const double v00 =
+          Ey(ixp, iyd, izp) * (1 - coeffs[0]) + Ey(ixp + 1, iyd, izp) * coeffs[0];
+        const double v01 =
+          Ey(ixp, iyd, izp + 1) * (1 - coeffs[0]) + Ey(ixp + 1, iyd, izp + 1) * coeffs[0];
+        const double v10 =
+          Ey(ixp, iyd + 1, izp) * (1 - coeffs[0]) + Ey(ixp + 1, iyd + 1, izp) * coeffs[0];
+        const double v11 =
+          Ey(ixp, iyd + 1, izp + 1) * (1 - coeffs[0]) + Ey(ixp + 1, iyd + 1, izp + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-          Eyp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
-        }
+        Eyp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      }
 
-        // // //particles_m[is].Ey_.d_view(part) = compute_interpolation(ixp, b, izp, coeffs, Ey);
-        // Ez (p, p, d)
-        {
-          const double coeffs[3] = {ixn, iyn, izn + 0.5};
-          //   Ezp(part)              = compute_interpolation(coeffs,
-          //                                     Ez(ixp, iyp, izd),
-          //                                     Ez(ixp, iyp, izd + 1),
-          //                                     Ez(ixp, iyp + 1, izd),
-          //                                     Ez(ixp, iyp + 1, izd + 1),
-          //                                     Ez(ixp + 1, iyp, izd),
-          //                                     Ez(ixp + 1, iyp, izd + 1),
-          //                                     Ez(ixp + 1, iyp + 1, izd),
-          //                                     Ez(ixp + 1, iyp + 1, izd + 1));
+      // Ez (p, p, d)
+      {
+        const double coeffs[3] = {ixn, iyn, izn + 0.5};
 
-          const double v00 =
-            Ez(ixp, iyp, izd) * (1 - coeffs[0]) + Ez(ixp + 1, iyp, izd) * coeffs[0];
-          const double v01 =
-            Ez(ixp, iyp, izd + 1) * (1 - coeffs[0]) + Ez(ixp + 1, iyp, izd + 1) * coeffs[0];
-          const double v10 =
-            Ez(ixp, iyp + 1, izd) * (1 - coeffs[0]) + Ez(ixp + 1, iyp + 1, izd) * coeffs[0];
-          const double v11 =
-            Ez(ixp, iyp + 1, izd + 1) * (1 - coeffs[0]) + Ez(ixp + 1, iyp + 1, izd + 1) * coeffs[0];
-          const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
-          const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+        const double v00 =
+          Ez(ixp, iyp, izd) * (1 - coeffs[0]) + Ez(ixp + 1, iyp, izd) * coeffs[0];
+        const double v01 =
+          Ez(ixp, iyp, izd + 1) * (1 - coeffs[0]) + Ez(ixp + 1, iyp, izd + 1) * coeffs[0];
+        const double v10 =
+          Ez(ixp, iyp + 1, izd) * (1 - coeffs[0]) + Ez(ixp + 1, iyp + 1, izd) * coeffs[0];
+        const double v11 =
+          Ez(ixp, iyp + 1, izd + 1) * (1 - coeffs[0]) + Ez(ixp + 1, iyp + 1, izd + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-          Ezp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
-        }
-        // particles_m[is].Ez_.d_view(part) = compute_interpolation(ixp, iyp, g, coeffs, Ez);
+        Ezp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      }
 
-        // interpolation magnetic field
-        // Bx (p, d, d)
-        {
-          const double coeffs[3] = {ixn, iyn + 0.5, izn + 0.5};
+      // interpolation magnetic field
+      // Bx (p, d, d)
+      {
+        const double coeffs[3] = {ixn, iyn + 0.5, izn + 0.5};
 
-          // Bxp(part)              = compute_interpolation(coeffs,
-          //                                   Bx(ixp, iyd, izd),
-          //                                   Bx(ixp, iyd, izd + 1),
-          //                                   Bx(ixp, iyd + 1, izd),
-          //                                   Bx(ixp, iyd + 1, izd + 1),
-          //                                   Bx(ixp + 1, iyd, izd),
-          //                                   Bx(ixp + 1, iyd, izd + 1),
-          //                                   Bx(ixp + 1, iyd + 1, izd),
-          //                                   Bx(ixp + 1, iyd + 1, izd + 1));
+        const double v00 =
+          Bx(ixp, iyd, izd) * (1 - coeffs[0]) + Bx(ixp + 1, iyd, izd) * coeffs[0];
+        const double v01 =
+          Bx(ixp, iyd, izd + 1) * (1 - coeffs[0]) + Bx(ixp + 1, iyd, izd + 1) * coeffs[0];
+        const double v10 =
+          Bx(ixp, iyd + 1, izd) * (1 - coeffs[0]) + Bx(ixp + 1, iyd + 1, izd) * coeffs[0];
+        const double v11 =
+          Bx(ixp, iyd + 1, izd + 1) * (1 - coeffs[0]) + Bx(ixp + 1, iyd + 1, izd + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-          const double v00 =
-            Bx(ixp, iyd, izd) * (1 - coeffs[0]) + Bx(ixp + 1, iyd, izd) * coeffs[0];
-          const double v01 =
-            Bx(ixp, iyd, izd + 1) * (1 - coeffs[0]) + Bx(ixp + 1, iyd, izd + 1) * coeffs[0];
-          const double v10 =
-            Bx(ixp, iyd + 1, izd) * (1 - coeffs[0]) + Bx(ixp + 1, iyd + 1, izd) * coeffs[0];
-          const double v11 =
-            Bx(ixp, iyd + 1, izd + 1) * (1 - coeffs[0]) + Bx(ixp + 1, iyd + 1, izd + 1) * coeffs[0];
-          const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
-          const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+        Bxp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      }
 
-          Bxp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
-        }
-        // particles_m[is].Bx_.d_view(part) = compute_interpolation(ixp, b, g, coeffs, Bx);
+      // By (d, p, d)
+      {
+        const double coeffs[3] = {ixn + 0.5, iyn, izn + 0.5};
 
-        // By (d, p, d)
-        {
-          const double coeffs[3] = {ixn + 0.5, iyn, izn + 0.5};
+        const double v00 =
+          By(ixd, iyp, izd) * (1 - coeffs[0]) + By(ixd + 1, iyp, izd) * coeffs[0];
+        const double v01 =
+          By(ixd, iyp, izd + 1) * (1 - coeffs[0]) + By(ixd + 1, iyp, izd + 1) * coeffs[0];
+        const double v10 =
+          By(ixd, iyp + 1, izd) * (1 - coeffs[0]) + By(ixd + 1, iyp + 1, izd) * coeffs[0];
+        const double v11 =
+          By(ixd, iyp + 1, izd + 1) * (1 - coeffs[0]) + By(ixd + 1, iyp + 1, izd + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-          // Byp(part)              = compute_interpolation(coeffs,
-          //                                   By(ixd, iyp, izd),
-          //                                   By(ixd, iyp, izd + 1),
-          //                                   By(ixd, iyp + 1, izd),
-          //                                   By(ixd, iyp + 1, izd + 1),
-          //                                   By(ixd + 1, iyp, izd),
-          //                                   By(ixd + 1, iyp, izd + 1),
-          //                                   By(ixd + 1, iyp + 1, izd),
-          //                                   By(ixd + 1, iyp + 1, izd + 1));
+        Byp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      }
 
-          const double v00 =
-            By(ixd, iyp, izd) * (1 - coeffs[0]) + By(ixd + 1, iyp, izd) * coeffs[0];
-          const double v01 =
-            By(ixd, iyp, izd + 1) * (1 - coeffs[0]) + By(ixd + 1, iyp, izd + 1) * coeffs[0];
-          const double v10 =
-            By(ixd, iyp + 1, izd) * (1 - coeffs[0]) + By(ixd + 1, iyp + 1, izd) * coeffs[0];
-          const double v11 =
-            By(ixd, iyp + 1, izd + 1) * (1 - coeffs[0]) + By(ixd + 1, iyp + 1, izd + 1) * coeffs[0];
-          const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
-          const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+      // Bz (d, d, p)
+      {
+        const double coeffs[3] = {ixn + 0.5, iyn + 0.5, izn};
 
-          Byp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
-        }
-        // particles_m[is].By_.d_view(part) = compute_interpolation(a, iyp, g, coeffs, By);
+        const double v00 =
+          Bz(ixd, iyd, izp) * (1 - coeffs[0]) + Bz(ixd + 1, iyd, izp) * coeffs[0];
+        const double v01 =
+          Bz(ixd, iyd, izp + 1) * (1 - coeffs[0]) + Bz(ixd + 1, iyd, izp + 1) * coeffs[0];
+        const double v10 =
+          Bz(ixd, iyd + 1, izp) * (1 - coeffs[0]) + Bz(ixd + 1, iyd + 1, izp) * coeffs[0];
+        const double v11 =
+          Bz(ixd, iyd + 1, izp + 1) * (1 - coeffs[0]) + Bz(ixd + 1, iyd + 1, izp + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-        // Bz (d, d, p)
-        {
-          const double coeffs[3] = {ixn + 0.5, iyn + 0.5, izn};
+        Bzp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      }
 
-          // Bzp(part)              = compute_interpolation(coeffs,
-          //                                   Bz(ixd, iyd, izp),
-          //                                   Bz(ixd, iyd, izp + 1),
-          //                                   Bz(ixd, iyd + 1, izp),
-          //                                   Bz(ixd, iyd + 1, izp + 1),
-          //                                   Bz(ixd + 1, iyd, izp),
-          //                                   Bz(ixd + 1, iyd, izp + 1),
-          //                                   Bz(ixd + 1, iyd + 1, izp),
-          //                                   Bz(ixd + 1, iyd + 1, izp + 1));
+    } // End for each particle
 
-          const double v00 =
-            Bz(ixd, iyd, izp) * (1 - coeffs[0]) + Bz(ixd + 1, iyd, izp) * coeffs[0];
-          const double v01 =
-            Bz(ixd, iyd, izp + 1) * (1 - coeffs[0]) + Bz(ixd + 1, iyd, izp + 1) * coeffs[0];
-          const double v10 =
-            Bz(ixd, iyd + 1, izp) * (1 - coeffs[0]) + Bz(ixd + 1, iyd + 1, izp) * coeffs[0];
-          const double v11 =
-            Bz(ixd, iyd + 1, izp + 1) * (1 - coeffs[0]) + Bz(ixd + 1, iyd + 1, izp + 1) * coeffs[0];
-          const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
-          const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
-
-          Bzp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
-        }
-        // particles_m[is].Bz_.d_view(part) = compute_interpolation(a, b, izp, coeffs, Bz);
-      } // End for each particle
   } // Species loop
 }
 
 // ______________________________________________________________________________
 //
 //! \brief Move the particle in the space, compute with EM fields interpolate
-//! \param[in] patch  patch data structure
+//! \param[in] particles  vector of particle species
 //! \param[in] dt time step to use for the pusher
 // ______________________________________________________________________________
-auto push(Patch &patch, double dt) -> void {
+auto push(std::vector<Particles<mini_float>> &particles, double dt) -> void {
 
   // For each species
-  for (int is = 0; is < patch.n_species_m; is++) {
+  for (size_t is = 0; is < particles.size(); is++) {
 
-    const int n_particles = patch.particles_m[is].size();
+    const int n_particles = particles[is].size();
 
     // q' = dt * (q/2m)
-    const mini_float qp = patch.particles_m[is].charge_m * dt * 0.5 / patch.particles_m[is].mass_m;
+    const mini_float qp = particles[is].charge_m * dt * 0.5 / particles[is].mass_m;
 
-    vector_t x = patch.particles_m[is].x_.data_h_;
-    vector_t y = patch.particles_m[is].y_.data_h_;
-    vector_t z = patch.particles_m[is].z_.data_h_;
+    vector_t x = particles[is].x_.data_h_;
+    vector_t y = particles[is].y_.data_h_;
+    vector_t z = particles[is].z_.data_h_;
 
-    vector_t mx = patch.particles_m[is].mx_.data_h_;
-    vector_t my = patch.particles_m[is].my_.data_h_;
-    vector_t mz = patch.particles_m[is].mz_.data_h_;
+    vector_t mx = particles[is].mx_.data_h_;
+    vector_t my = particles[is].my_.data_h_;
+    vector_t mz = particles[is].mz_.data_h_;
 
-    vector_t Exp = patch.particles_m[is].Ex_.data_h_;
-    vector_t Eyp = patch.particles_m[is].Ey_.data_h_;
-    vector_t Ezp = patch.particles_m[is].Ez_.data_h_;
+    vector_t Exp = particles[is].Ex_.data_h_;
+    vector_t Eyp = particles[is].Ey_.data_h_;
+    vector_t Ezp = particles[is].Ez_.data_h_;
 
-    vector_t Bxp = patch.particles_m[is].Bx_.data_h_;
-    vector_t Byp = patch.particles_m[is].By_.data_h_;
-    vector_t Bzp = patch.particles_m[is].Bz_.data_h_;
+    vector_t Bxp = particles[is].Bx_.data_h_;
+    vector_t Byp = particles[is].By_.data_h_;
+    vector_t Bzp = particles[is].Bz_.data_h_;
 
     for (int ip = 0; ip < n_particles; ++ip) {
         // 1/2 E
@@ -330,14 +266,6 @@ auto push(Patch &patch, double dt) -> void {
       }
 
     // Copy the data from the device to the host
-    // patch.particles_m[is].copy_device_to_host();
-
-    // patch.particles_m[is].check(patch.inf_m[0], patch.sup_m[0], patch.inf_m[1], patch.sup_m[1],
-    // patch.inf_m[2], patch.sup_m[2]);
-
-    // patch.particles_m[is].print();
-
-    // patch.particles_m[is].check_sum();
 
   } // Loop on species
 }
@@ -345,30 +273,31 @@ auto push(Patch &patch, double dt) -> void {
 // ______________________________________________________________________________
 //
 //! \brief Push only the momentum
-//! \param[in] patch  patch data structure
+//! \param[in] particles vector of species Particles
 //! \param[in] dt time step to use for the pusher
 // ______________________________________________________________________________
-auto push_momentum(Patch &patch, double dt) -> void {
+auto push_momentum(std::vector<Particles<mini_float>> &particles, double dt) -> void {
+
 
   // for each species
-  for (int is = 0; is < patch.n_species_m; is++) {
+  for (size_t is = 0; is < particles.size(); is++) {
 
-    const int n_particles = patch.particles_m[is].size();
+    const int n_particles = particles[is].size();
 
     // q' = dt * (q/2m)
-    const mini_float qp = patch.particles_m[is].charge_m * dt * 0.5 / patch.particles_m[is].mass_m;
+    const mini_float qp = particles[is].charge_m * dt * 0.5 / particles[is].mass_m;
 
-    vector_t mx = patch.particles_m[is].mx_.data_h_;
-    vector_t my = patch.particles_m[is].my_.data_h_;
-    vector_t mz = patch.particles_m[is].mz_.data_h_;
+    vector_t mx = particles[is].mx_.data_h_;
+    vector_t my = particles[is].my_.data_h_;
+    vector_t mz = particles[is].mz_.data_h_;
 
-    vector_t Exp = patch.particles_m[is].Ex_.data_h_;
-    vector_t Eyp = patch.particles_m[is].Ey_.data_h_;
-    vector_t Ezp = patch.particles_m[is].Ez_.data_h_;
+    vector_t Exp = particles[is].Ex_.data_h_;
+    vector_t Eyp = particles[is].Ey_.data_h_;
+    vector_t Ezp = particles[is].Ez_.data_h_;
 
-    vector_t Bxp = patch.particles_m[is].Bx_.data_h_;
-    vector_t Byp = patch.particles_m[is].By_.data_h_;
-    vector_t Bzp = patch.particles_m[is].Bz_.data_h_;
+    vector_t Bxp = particles[is].Bx_.data_h_;
+    vector_t Byp = particles[is].By_.data_h_;
+    vector_t Bzp = particles[is].Bz_.data_h_;
 
     for(int ip = 0; ip < n_particles; ++ip) {
         // 1/2 E
@@ -426,243 +355,225 @@ auto push_momentum(Patch &patch, double dt) -> void {
 //! or reflect the particles which leave the domain
 //
 //! \param[in] Params & params - constant global simulation parameters
-//! \param[in] Patch & patch - current patch
+//! \param[in] std::vector<Particles<mini_float>> & particles - vector of species Particles
 // _____________________________________________________________________
-auto pushBC(Params &params, Patch &patch) -> void {
+auto pushBC(Params &params, std::vector<Particles<mini_float>> &particles) -> void {
 
-  if (patch.on_border_m) {
+  const mini_float inf_global[3] = {params.inf_x, params.inf_y, params.inf_z};
+  const mini_float sup_global[3] = {params.sup_x, params.sup_y, params.sup_z};
 
-    const mini_float inf_global[3] = {params.inf_x, params.inf_y, params.inf_z};
-    const mini_float sup_global[3] = {params.sup_x, params.sup_y, params.sup_z};
+  // Periodic conditions
+  if (params.boundary_condition_code == 1) {
 
-    // Periodic conditions
-    if (params.boundary_condition_code == 1) {
+    const mini_float length[3] = {params.Lx, params.Ly, params.Lz};
 
-      const int N_patches[3]     = {patch.nx_patchs_m, patch.ny_patchs_m, patch.nz_patchs_m};
-      const mini_float length[3] = {params.Lx, params.Ly, params.Lz};
+    for (size_t is = 0; is < particles.size(); is++) {
 
-      for (int is = 0; is < patch.n_species_m; is++) {
+      unsigned int n_particles = particles[is].size();
 
-        unsigned int n_particles = patch.particles_m[is].size();
+      device_vector_t x = particles[is].x_.data_;
+      device_vector_t y = particles[is].y_.data_;
+      device_vector_t z = particles[is].z_.data_;
 
-        device_vector_t x = patch.particles_m[is].x_.data_;
-        device_vector_t y = patch.particles_m[is].y_.data_;
-        device_vector_t z = patch.particles_m[is].z_.data_;
+      Kokkos::parallel_for(
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+          mini_float *pos[3] = {&x(part), &y(part), &z(part)};
 
-        Kokkos::parallel_for(
-          n_particles,
-          KOKKOS_LAMBDA(const int part) {
-            mini_float *pos[3] = {&x(part), &y(part), &z(part)};
+          for (int d = 0; d < 3; d++) {
+            if (*pos[d] >= sup_global[d]) {
 
-            for (int d = 0; d < 3; d++) {
+              *pos[d] -= length[d];
 
-              // Only relevant if there is just 1 patch in this direction
-              // Else the patch exchange with periodicity is managed in the dedicated function
-              if (N_patches[d] == 1) {
-                if (*pos[d] >= sup_global[d]) {
+            } else if (*pos[d] < inf_global[d]) {
 
-                  *pos[d] -= length[d];
+              *pos[d] += length[d];
 
-                } else if (*pos[d] < inf_global[d]) {
-
-                  *pos[d] += length[d];
-                }
-              }
             }
-          } // End loop on particles
+          }
+          
+        } // End loop on particles
 
-        );
+      );
 
-        Kokkos::fence();
+      Kokkos::fence();
 
-      } // End loop on species
+    } // End loop on species
 
-      // Reflective conditions
-    } else if (params.boundary_condition_code == 2) {
-      for (int is = 0; is < patch.n_species_m; is++) {
+    // Reflective conditions
+  } else if (params.boundary_condition_code == 2) {
+    for (size_t is = 0; is < particles.size(); is++) {
 
-        unsigned int n_particles = patch.particles_m[is].size();
+      unsigned int n_particles = particles[is].size();
 
-        device_vector_t x = patch.particles_m[is].x_.data_;
-        device_vector_t y = patch.particles_m[is].y_.data_;
-        device_vector_t z = patch.particles_m[is].z_.data_;
+      device_vector_t x = particles[is].x_.data_;
+      device_vector_t y = particles[is].y_.data_;
+      device_vector_t z = particles[is].z_.data_;
 
-        device_vector_t mx = patch.particles_m[is].mx_.data_;
-        device_vector_t my = patch.particles_m[is].my_.data_;
-        device_vector_t mz = patch.particles_m[is].mz_.data_;
+      device_vector_t mx = particles[is].mx_.data_;
+      device_vector_t my = particles[is].my_.data_;
+      device_vector_t mz = particles[is].mz_.data_;
 
-        Kokkos::parallel_for(
-          n_particles,
-          KOKKOS_LAMBDA(const int part) {
-            mini_float *pos[3] = {&x(part), &y(part), &z(part)};
+      Kokkos::parallel_for(
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+          mini_float *pos[3] = {&x(part), &y(part), &z(part)};
 
-            mini_float *momentum[3] = {&mx(part), &my(part), &mz(part)};
+          mini_float *momentum[3] = {&mx(part), &my(part), &mz(part)};
 
-            for (int d = 0; d < 3; d++) {
+          for (int d = 0; d < 3; d++) {
 
-              if (*pos[d] >= sup_global[d]) {
+            if (*pos[d] >= sup_global[d]) {
 
-                *pos[d]      = 2 * sup_global[d] - *pos[d];
-                *momentum[d] = -*momentum[d];
+              *pos[d]      = 2 * sup_global[d] - *pos[d];
+              *momentum[d] = -*momentum[d];
 
-              } else if (*pos[d] < inf_global[d]) {
+            } else if (*pos[d] < inf_global[d]) {
 
-                *pos[d]      = 2 * inf_global[d] - *pos[d];
-                *momentum[d] = -*momentum[d];
-              }
+              *pos[d]      = 2 * inf_global[d] - *pos[d];
+              *momentum[d] = -*momentum[d];
             }
-          } // End loop on particles
+          }
+        } // End loop on particles
 
-        );
+      );
 
-        Kokkos::fence();
+      Kokkos::fence();
 
       } // End loop on species
     } // if type of conditions
-  } // if on border
 }
+
 
 // _______________________________________________________________________
 //
-//! \brief Current projection from global particles position to local grid
-//! \param params global parameters
-//! \param patch current patch
+//! \brief Current projection directly in the global array
+//! \param[in] params constant global parameters
+//! \param[in] em electromagnetic fields
+//! \param[in] particles vector of species Particles
 // _______________________________________________________________________
-auto project(Params &params, Patch &patch) -> void {
-  for (int is = 0; is < patch.n_species_m; is++) {
-    patch.vec_Jx_m[is].reset(minipic::host);
-    patch.vec_Jy_m[is].reset(minipic::host);
-    patch.vec_Jz_m[is].reset(minipic::host);
+void project(Params &params, ElectroMagn &em, std::vector<Particles<mini_float>> &particles) {
 
-#if defined(__MINIPIC_DEBUG__)
-    patch.particles_m[is].sync(minipic::device, minipic::host);
-    patch.particles_m[is].check(params.inf_x - params.dx,
-                                params.sup_x + params.dx,
-                                params.inf_y - params.dy,
-                                params.sup_y + params.dy,
-                                params.inf_z - params.dz,
-                                params.sup_z + params.dz);
-    // particles_m[is].print();
-    // particles_m[is].check_sum();
+  field_t Jx = em.Jx_m.data_m_h;
+  field_t Jy = em.Jy_m.data_m_h;
+  field_t Jz = em.Jz_m.data_m_h;
+
+  const double dt = params.dt;
+
+  const double inv_dx = params.inv_dx;
+  const double inv_dy = params.inv_dy;
+  const double inv_dz = params.inv_dz;
+
+#if (__MINIPIC_DEBUG__)
+  int nx_Jx = em.Jx_m.nx_m;
+  int ny_Jx = em.Jx_m.ny_m;
+  int nz_Jx = em.Jx_m.nz_m;
+
+  int nx_Jy = em.Jy_m.nx_m;
+  int ny_Jy = em.Jy_m.ny_m;
+  int nz_Jy = em.Jy_m.nz_m;
 #endif
 
-    const int n_particles = patch.particles_m[is].size();
-    if (n_particles > 0) {
+  for (size_t is = 0; is < particles.size(); is++) {
 
-      const double inv_cell_volume_x_q = params.inv_cell_volume * patch.particles_m[is].charge_m;
-      const double dt                  = params.dt;
+    const int n_particles            = particles[is].size();
+    const double inv_cell_volume_x_q = params.inv_cell_volume * particles[is].charge_m;
+    // double m       = particles_m[is].mass_m;
 
-      const double inv_dx = params.inv_dx;
-      const double inv_dy = params.inv_dy;
-      const double inv_dz = params.inv_dz;
+    vector_t w = particles[is].weight_.data_h_;
 
-      const double xmin = patch.inf_m[0];
-      const double ymin = patch.inf_m[1];
-      const double zmin = patch.inf_m[2];
+    vector_t x = particles[is].x_.data_h_;
+    vector_t y = particles[is].y_.data_h_;
+    vector_t z = particles[is].z_.data_h_;
 
-      field_t Jx_loc = patch.vec_Jx_m[is].data_m_h;
-      field_t Jy_loc = patch.vec_Jy_m[is].data_m_h;
-      field_t Jz_loc = patch.vec_Jz_m[is].data_m_h;
+    vector_t mx = particles[is].mx_.data_h_;
+    vector_t my = particles[is].my_.data_h_;
+    vector_t mz = particles[is].mz_.data_h_;
 
-      vector_t w = patch.particles_m[is].weight_.data_h_;
+   for (int part = 0; part < n_particles; ++part) {
 
-      vector_t x = patch.particles_m[is].x_.data_h_;
-      vector_t y = patch.particles_m[is].y_.data_h_;
-      vector_t z = patch.particles_m[is].z_.data_h_;
+      // Delete if already compute by Pusher
+      // double usq = (moment[0]*moment[0] + moment[1]*moment[1] + moment[2]*moment[2]);
+      // double gamma = sqrt(1+usq);
+      // gamma_inv = 1/gamma;
 
-      vector_t mx = patch.particles_m[is].mx_.data_h_;
-      vector_t my = patch.particles_m[is].my_.data_h_;
-      vector_t mz = patch.particles_m[is].mz_.data_h_;
+      const double charge_weight = inv_cell_volume_x_q * w(part);
 
-      for (int part = 0; part < n_particles; ++part) {
-          const double charge_weight = inv_cell_volume_x_q * w(part);
+      const double gamma_inv =
+        1 / Kokkos::sqrt(1 + (mx(part) * mx(part) + my(part) * my(part) + mz(part) * mz(part)));
 
-          // gamma-factor
-          const double gamma_inv =
-            1 / sqrt(1 + (mx(part) * mx(part) + my(part) * my(part) + mz(part) * mz(part)));
+      const double vx = mx(part) * gamma_inv;
+      const double vy = my(part) * gamma_inv;
+      const double vz = mz(part) * gamma_inv;
 
-          const double vx = mx(part) * gamma_inv;
-          const double vy = my(part) * gamma_inv;
-          const double vz = mz(part) * gamma_inv;
+      const double Jxp = vx * charge_weight;
+      const double Jyp = vy * charge_weight;
+      const double Jzp = vz * charge_weight;
 
-          // Current from the particle
-          const double Jxp = vx * charge_weight;
-          const double Jyp = vy * charge_weight;
-          const double Jzp = vz * charge_weight;
+      // Calculate normalized positions
+      // We come back 1/2 time step back in time for the position because of the leap frog scheme
+      // As a consequence, we also have `+ 1` because the current grids have 2 additional ghost
+      // cells (1 the min and 1 at the max border) when the direction is primal
+      const double posxn = (x(part) - 0.5 * dt * vx) * inv_dx + 1;
+      const double posyn = (y(part) - 0.5 * dt * vy) * inv_dy + 1;
+      const double poszn = (z(part) - 0.5 * dt * vz) * inv_dz + 1;
 
-          // Calculate normalized position relative to the patch
-          // ixn = (particles_m[is].x(part) ) * params.inv_dx;
-          // iyn = (particles_m[is].y(part) ) * params.inv_dy;
-          // izn = (particles_m[is].z(part) ) * params.inv_dz;
-          const double posxn = (x(part) - 0.5 * dt * vx - xmin) * inv_dx + 1;
-          const double posyn = (y(part) - 0.5 * dt * vy - ymin) * inv_dy + 1;
-          const double poszn = (z(part) - 0.5 * dt * vz - zmin) * inv_dz + 1;
+      // Compute indexes in primal grid
+      const int ixp = (int)(Kokkos::floor(posxn)); //- i_patch_topology_m * nx_cells_m;
+      const int iyp = (int)(Kokkos::floor(posyn)); //- j_patch_topology_m * ny_cells_m;
+      const int izp = (int)(Kokkos::floor(poszn)); //- k_patch_topology_m * nz_cells_m;
 
-          // Compute indexes in primal grid
-          const int ixp = (int)(floor(posxn));
-          const int iyp = (int)(floor(posyn));
-          const int izp = (int)(floor(poszn));
+      // Compute indexes in dual grid
+      const int ixd = (int)Kokkos::floor(posxn - 0.5); //- i_patch_topology_m * nx_cells_m;
+      const int iyd = (int)Kokkos::floor(posyn - 0.5); //- j_patch_topology_m * ny_cells_m;
+      const int izd = (int)Kokkos::floor(poszn - 0.5); //- k_patch_topology_m * nz_cells_m;
 
-          // Compute indexes in dual grid
-          // For the current, the dual grid is 0.5 * dx shorter on each side of the grid (if dual
-          // directions only)
-          const int ixd = (int)(floor(posxn - 0.5));
-          const int iyd = (int)(floor(posyn - 0.5));
-          const int izd = (int)(floor(poszn - 0.5));
+      // Projection particle on currant field
+      // Compute interpolation coeff, p = primal, d = dual
 
-          // Projection particle on current field
-          // Compute interpolation coeff, p = primal, d = dual
+      double coeffs[3];
 
-          double coeffs[3];
+      coeffs[0] = posxn - 0.5 - ixd;
+      coeffs[1] = posyn - iyp;
+      coeffs[2] = poszn - izp;
 
-          coeffs[0] = posxn - 0.5 - ixd;
-          coeffs[1] = posyn - iyp;
-          coeffs[2] = poszn - izp;
+      Jx(ixd, iyp, izp) += (1 - coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jxp;
+      Jx(ixd, iyp, izp + 1) += (1 - coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jxp;
+      Jx(ixd, iyp + 1, izp) += (1 - coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jxp;
+      Jx(ixd, iyp + 1, izp + 1) += (1 - coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jxp;
+      Jx(ixd + 1, iyp, izp) += (coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jxp;
+      Jx(ixd + 1, iyp, izp + 1) += (coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jxp;
+      Jx(ixd + 1, iyp + 1, izp) += (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jxp;
+      Jx(ixd + 1, iyp + 1, izp + 1) += (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jxp;
 
-          Jx_loc(ixd, iyp, izp) += (1 - coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jxp;
-          Jx_loc(ixd, iyp, izp + 1) += (1 - coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jxp;
-          Jx_loc(ixd, iyp + 1, izp) += (1 - coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jxp;
-          Jx_loc(ixd, iyp + 1, izp + 1) += (1 - coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jxp;
-          Jx_loc(ixd + 1, iyp, izp) += (coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jxp;
-          Jx_loc(ixd + 1, iyp, izp + 1) += (coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jxp;
-          Jx_loc(ixd + 1, iyp + 1, izp) += (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jxp;
-          Jx_loc(ixd + 1, iyp + 1, izp + 1) += (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jxp;
+      coeffs[0] = posxn - ixp;
+      coeffs[1] = posyn - 0.5 - iyd;
+      coeffs[2] = poszn - izp;
 
-          coeffs[0] = posxn - ixp;
-          coeffs[1] = posyn - 0.5 - iyd;
-          coeffs[2] = poszn - izp;
+      Jy(ixp, iyd, izp) += (1 - coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jyp;
+      Jy(ixp, iyd, izp + 1) += (1 - coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jyp;
+      Jy(ixp, iyd + 1, izp) += (1 - coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jyp;
+      Jy(ixp, iyd + 1, izp + 1) += (1 - coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jyp;
+      Jy(ixp + 1, iyd, izp) += (coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jyp;
+      Jy(ixp + 1, iyd, izp + 1) += (coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jyp;
+      Jy(ixp + 1, iyd + 1, izp) += (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jyp;
+      Jy(ixp + 1, iyd + 1, izp + 1) += (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jyp;
 
-          Jy_loc(ixp, iyd, izp) += (1 - coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jyp;
-          Jy_loc(ixp, iyd, izp + 1) += (1 - coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jyp;
-          Jy_loc(ixp, iyd + 1, izp) += (1 - coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jyp;
-          Jy_loc(ixp, iyd + 1, izp + 1) += (1 - coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jyp;
-          Jy_loc(ixp + 1, iyd, izp) += (coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jyp;
-          Jy_loc(ixp + 1, iyd, izp + 1) += (coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jyp;
-          Jy_loc(ixp + 1, iyd + 1, izp) += (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jyp;
-          Jy_loc(ixp + 1, iyd + 1, izp + 1) += (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jyp;
+      coeffs[0] = posxn - ixp;
+      coeffs[1] = posyn - iyp;
+      coeffs[2] = poszn - 0.5 - izd;
 
-          coeffs[0] = posxn - ixp;
-          coeffs[1] = posyn - iyp;
-          coeffs[2] = poszn - 0.5 - izd;
+      Jz(ixp, iyp, izd) += (1 - coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jzp;
+      Jz(ixp, iyp, izd + 1) += (1 - coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jzp;
+      Jz(ixp, iyp + 1, izd) += (1 - coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jzp;
+      Jz(ixp, iyp + 1, izd + 1) += (1 - coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jzp;
+      Jz(ixp + 1, iyp, izd) += (coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jzp;
+      Jz(ixp + 1, iyp, izd + 1) += (coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jzp;
+      Jz(ixp + 1, iyp + 1, izd) += (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jzp;
+      Jz(ixp + 1, iyp + 1, izd + 1) += (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jzp;
 
-          Jz_loc(ixp, iyp, izd) += (1 - coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jzp;
-          Jz_loc(ixp, iyp, izd + 1) += (1 - coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jzp;
-          Jz_loc(ixp, iyp + 1, izd) += (1 - coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jzp;
-          Jz_loc(ixp, iyp + 1, izd + 1) += (1 - coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jzp;
-          Jz_loc(ixp + 1, iyp, izd) += (coeffs[0]) * (1 - coeffs[1]) * (1 - coeffs[2]) * Jzp;
-          Jz_loc(ixp + 1, iyp, izd + 1) += (coeffs[0]) * (1 - coeffs[1]) * (coeffs[2]) * Jzp;
-          Jz_loc(ixp + 1, iyp + 1, izd) += (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jzp;
-          Jz_loc(ixp + 1, iyp + 1, izd + 1) += (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jzp;
-        } // end for each particles
-
-      patch.projected_[is] = true;
-
-    } else {
-
-      patch.projected_[is] = false;
-
-    } // end if n_particles > 0
-  } // end loop species
+    }  // end for each particles
+  }  // end for each species
 }
 
 // _______________________________________________________
@@ -1077,112 +988,6 @@ auto solveBC(Params &params, ElectroMagn &em) -> void {
     Kokkos::fence();
   } // End if
 } // End solveBC
-
-// ______________________________________________________
-//
-//! \brief Sum all species local current grids in local grid
-//! \param[in] patch  current patch to handle
-// ______________________________________________________
-auto reduc_current(Patch &patch) -> void {
-
-  for (int is = 1; is < patch.n_species_m; is++) {
-
-    // Only if particles projected
-    if (patch.projected_[is]) {
-      field_t Jx_0  = patch.vec_Jx_m[0].data_m_h;
-      field_t Jx_is = patch.vec_Jx_m[is].data_m_h;
-
-      field_t Jy_0  = patch.vec_Jy_m[0].data_m_h;
-      field_t Jy_is = patch.vec_Jy_m[is].data_m_h;
-
-      field_t Jz_0  = patch.vec_Jz_m[0].data_m_h;
-      field_t Jz_is = patch.vec_Jz_m[is].data_m_h;
-
-      for (int ix = 0; ix < patch.vec_Jx_m[is].nx(); ++ix) {
-        for (int iy = 0; iy < patch.vec_Jx_m[is].ny(); ++iy) {
-          for (int iz = 0; iz < patch.vec_Jx_m[is].nz(); ++iz) {
-            Jx_0(ix, iy, iz) += Jx_is(ix, iy, iz);
-          }
-        }
-      }
-
-      for (int ix = 0; ix < patch.vec_Jy_m[is].nx(); ++ix) {
-        for (int iy = 0; iy < patch.vec_Jy_m[is].ny(); ++iy) {
-          for (int iz = 0; iz < patch.vec_Jy_m[is].nz(); ++iz) {
-            Jy_0(ix, iy, iz) += Jy_is(ix, iy, iz);
-          }
-        }
-      }
-
-      for (int ix = 0; ix < patch.vec_Jz_m[is].nx(); ++ix) {
-        for (int iy = 0; iy < patch.vec_Jz_m[is].ny(); ++iy) {
-          for (int iz = 0; iz < patch.vec_Jz_m[is].nz(); ++iz) {
-            Jz_0(ix, iy, iz) += Jz_is(ix, iy, iz);
-          }
-        }
-      }
-
-    } // end check if particles
-  } // end for species
-}
-
-// ____________________________________________________________________________
-//! \brief Copy all local current grid in the global grid
-//! \param[in] ElectroMagn & em - global electromagnetic fields
-//! \param[in] Patch & patch - current patch
-// ____________________________________________________________________________
-auto local2global(ElectroMagn &em, Patch &patch) -> void {
-
-  bool projected = false;
-
-  for (int is = 0; is < patch.n_species_m; is++) {
-    projected = projected || patch.projected_[is];
-  }
-
-  // projection only if particles in this patch
-  if (projected) {
-
-    const int i_global_p = patch.ix_origin_m;
-    const int j_global_p = patch.iy_origin_m;
-    const int k_global_p = patch.iz_origin_m;
-    const int i_global_d = patch.ix_origin_m;
-    const int j_global_d = patch.iy_origin_m;
-    const int k_global_d = patch.iz_origin_m;
-
-    field_t Jx_0 = patch.vec_Jx_m[0].data_m_h;
-    field_t Jx   = em.Jx_m.data_m_h;
-
-    field_t Jy_0 = patch.vec_Jy_m[0].data_m_h;
-    field_t Jy   = em.Jy_m.data_m_h;
-
-    field_t Jz_0 = patch.vec_Jz_m[0].data_m_h;
-    field_t Jz   = em.Jz_m.data_m_h;
-
-    for (int ix = 0; ix < patch.vec_Jx_m[0].nx(); ++ix) {
-      for (int iy = 0; iy < patch.vec_Jx_m[0].ny(); ++iy) {
-        for (int iz = 0; iz < patch.vec_Jx_m[0].nz(); ++iz) {
-          Jx(i_global_d + ix, j_global_p + iy, k_global_p + iz) += Jx_0(ix, iy, iz);
-        }
-      }
-    }
-
-    for (int ix = 0; ix < patch.vec_Jy_m[0].nx(); ++ix) {
-      for (int iy = 0; iy < patch.vec_Jy_m[0].ny(); ++iy) {
-        for (int iz = 0; iz < patch.vec_Jy_m[0].nz(); ++iz) {
-          Jy(i_global_p + ix, j_global_d + iy, k_global_p + iz) += Jy_0(ix, iy, iz);
-        }
-      }
-    }
-
-    for (int ix = 0; ix < patch.vec_Jz_m[0].nx(); ++ix) {
-      for (int iy = 0; iy < patch.vec_Jz_m[0].ny(); ++iy) {
-        for (int iz = 0; iz < patch.vec_Jz_m[0].nz(); ++iz) {
-          Jz(i_global_p + ix, j_global_p + iy, k_global_d + iz) += Jz_0(ix, iy, iz);
-        }
-      }
-    }
-  } // end if total_particles
-}
 
 // ____________________________________________________________________________
 //! \brief Emit a laser field in the x direction using an antenna

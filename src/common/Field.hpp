@@ -121,7 +121,7 @@ public:
   //! \brief Give the total number of points in the grid
   //! \return the total number of points in the grid
   // _________________________________________________________________________________________
-  int size() const { return nx_m * ny_m * nz_m; }
+  unsigned int size() const { return nx_m * ny_m * nz_m; }
 
   // _________________________________________________________________________________________
   //

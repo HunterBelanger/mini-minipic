@@ -145,7 +145,7 @@ public:
   //! \brief return the size
   //! \return size of the vector
   // ______________________________________________________________________
-  INLINE T size() { return size_; }
+  INLINE auto size() const { return size_; }
 
   // ______________________________________________________________________
   //
@@ -355,8 +355,8 @@ public:
 
 #if defined(__MINIPIC_KOKKOS__)
 
-using vector_t        = Kokkos::View<mini_float *, Kokkos::DefaultHostExecutionSpace::memory_space>;
 using device_vector_t = Kokkos::View<mini_float *>;
+using vector_t        = typename device_vector_t::host_mirror_type;
 
 #elif defined(__MINIPIC_KOKKOS_UNIFIED__)
 

@@ -12,7 +12,7 @@ message(" __________________________________________________________________ \n"
 
 # Disable in-source builds to prevent source tree corruption.
 if( "${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}" )
- message( FATAL_ERROR "FATAL: In-source builds are not allowed. You should create a separate directory for build files and delete CMakeCache.txt." )
+ message( FATAL_ERROR "In-source builds are not allowed. You should create a separate directory for build files and delete CMakeCache.txt." )
 endif()
 
 # __________________________________________________________________
@@ -33,15 +33,13 @@ message(" Build type: ${CMAKE_BUILD_TYPE}")
 
 # Debug and test modes
 option(DEBUG "Debug messages" OFF)
-option(WARNING "Warning mode (ON/OFF)" OFF)
+option(WARNING "Warning mode" OFF)
 option(TEST "Simulation test for CI" OFF)
-option(MINIPIC "Compile minipic (ON/OFF)" ON)
-option(UNIFIED_MEMORY "Use unified memory (ON/OFF)" OFF)
+option(MINIPIC "Compile minipic" ON)
+option(UNIFIED_MEMORY "Use unified memory" OFF)
+set(IMPLEMENTATION "exercise" CACHE STRING "Which implementation to use")
 
 message(" Minipic compilation: ${MINIPIC}")
-
-set(EXE_NAME "minipic")
-message(" Executable name: ${EXE_NAME}")
 
 set(COMPILE_OPTIONS "")
 set(LINK_OPTIONS "")
@@ -73,22 +71,26 @@ else ()
  set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -D__MINIPIC_KOKKOS_NON_UNIFIED__)
 endif ()
 
-# __________________________________________________________________
-# Determine languages
+# _________________________________________________________________
+# Implementation
 
-set(LANGUAGES CXX)
-
-message(" Languages: ${LANGUAGES}")
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/${IMPLEMENTATION}")
+  message(FATAL_ERROR "Cannot find implementation '${IMPLEMENTATION}' in src/")
+endif()
+message(" Implementation: ${IMPLEMENTATION}")
 
 message(" __________________________________________________________________ \n")
 
-project (minipic LANGUAGES ${LANGUAGES})
+# __________________________________________________________________
+# Project
+
+project(
+  minipic
+  LANGUAGES CXX
+)
 
 # __________________________________________________________________
-# Sources and compile options
-
-file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/exercices/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp")
-include_directories(src/setups src/common src/exercices)
+# Dependencies
 
 find_package(Kokkos QUIET)
 if(Kokkos_FOUND)
@@ -105,24 +107,48 @@ endif()
 
 # __________________________________________________________________
 
-message("${CMAKE_CURRENT_SOURCE_DIR}")
-message("${CMAKE_SOURCE_DIR}")
-
 # Specific behavior for test mode
 if (TEST)
   set(MAIN_PATH "./main.cpp")
 else()
- set(MAIN_PATH "./src/main.cpp")
+  set(MAIN_PATH "./src/main.cpp")
 endif()
 
 # __________________________________________________________________
 # Create executable with options
 
-if (MINIPIC)
+file(GLOB SOURCES_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp")
 
-  add_executable(${EXE_NAME} ${SOURCES} ${MAIN_PATH})
-  target_compile_options(${EXE_NAME} PRIVATE ${COMPILE_OPTIONS})
-  target_link_options(${EXE_NAME} PRIVATE ${LINK_OPTIONS})
-  target_link_libraries(${EXE_NAME} PRIVATE Kokkos::kokkos)
+set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -D__MINIPIC_KOKKOS__ -D__MINIPIC_KOKKOS_COMMON__ -D__MINIPIC_KOKKOS_NON_UNIFIED__)
+
+if(MINIPIC)
+
+  add_executable(
+    minipic
+    ${SOURCES_COMMON}
+    ${MAIN_PATH}
+  )
+  target_include_directories(
+    minipic
+    PUBLIC
+      "src/setups"
+      "src/common"
+      "src/${IMPLEMENTATION}"
+  )
+  target_compile_options(
+    minipic
+    PRIVATE
+      ${COMPILE_OPTIONS}
+  )
+  target_link_options(
+    minipic
+    PRIVATE
+      ${LINK_OPTIONS}
+  )
+  target_link_libraries(
+    minipic
+    PRIVATE
+      Kokkos::kokkos
+  )
 
 endif()

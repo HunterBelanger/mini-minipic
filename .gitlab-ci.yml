@@ -24,7 +24,7 @@ test_exercise_serial:
     - source ${WORKDIR}/gitlab/runners/minipic_cexa/envs/omp.sh
     - pip install .
   script:
-    - srun --time=00:20:00 --cpus-per-task=4 --ntasks=1 --partition=cpu_short mini-run -c icpx -g cpu-serial --cmake-args-add="-DMINIPIC_IMPLEMENTATION=exercise" --build="build/exercise"
+    - srun --time=00:20:00 --cpus-per-task=4 --ntasks=1 --partition=cpu_short mini-run -c icpx -g cpu-serial --implementation exercise --build="build/exercise"
 
 # _____________________________________________________________________________
 #
@@ -41,7 +41,7 @@ test_kokkos_omp:
     - source ${WORKDIR}/gitlab/runners/minipic_cexa/envs/omp.sh
     - pip install .
   script:
-    - srun --time=00:20:00 --cpus-per-task=8 --ntasks=1 --partition=cpu_short mini-run -c icpx -g cpu-openmp --cmake-args-add="-DMINIPIC_IMPLEMENTATION=kokkos" --build="build/kokkos/omp"
+    - srun --time=00:20:00 --cpus-per-task=8 --ntasks=1 --partition=cpu_short mini-run -c icpx -g cpu-openmp --implementation kokkos --build="build/kokkos/omp"
 
 # _____________________________________________________________________________
 #
@@ -58,4 +58,4 @@ test_kokkos_gpu:
     - source ${WORKDIR}/gitlab/runners/minipic_cexa/envs/a100.sh
     - pip install .
   script:
-    - srun --nodes=1 --time=00:15:00 -p gpua100 --gres=gpu:1 --exclude=$EXCLUDED_GPUS mini-run -c g++ -g gpu-a100 --cmake-args-add="-DMINIPIC_IMPLEMENTATION=kokkos" --build="build/kokkos/gpu"
+    - srun --nodes=1 --time=00:15:00 -p gpua100 --gres=gpu:1 --exclude=$EXCLUDED_GPUS mini-run -c g++ -g gpu-a100 --implementation kokkos --build="build/kokkos/gpu"

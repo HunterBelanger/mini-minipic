@@ -32,6 +32,7 @@ Here is a list of the available options:
 | `-c COMPILER` | `--compiler COMPILER` | Custom compiler choice |
 | `-b BENCHMARKS` | `--benchmarks BENCHMARKS` | Specific benchmark, you can specify several benchmarks with a coma. For instance "default,beam" |
 | | `--build-dir` | Build directory to use, default to `build` |
+| | `--implementation` | Which implementation to use, default to `exercise` |
 | `-a ARGUMENTS` | `--arguments ARGUMENTS` | Default arguments |
 | | `--fresh` | Whether to delete or already existing files |
 | | `--clean` | Whether to delete or not the generated files |

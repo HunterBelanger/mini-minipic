@@ -154,6 +154,13 @@ def run():
     parser.add_argument(
         "--build-dir", help="build directory, default to 'build'", default="build"
     )
+    parser.add_argument(
+        "--implementation",
+        help=(
+            "which implementation to use, 'kokkos' or 'exercise', default to 'exercise'"
+        ),
+        default="exercise"
+    )
     parser.add_argument("-a", "--arguments", help="default arguments", default=None)
     parser.add_argument(
         "--fresh",
@@ -358,6 +365,7 @@ def run():
     compiler = selected_config["compiler"]
     cmake = selected_config["cmake"]
     executable_name = selected_config["exe_name"]
+    implementation = args.implementation
 
     for ib, benchmark in enumerate(selected_config["benchmarks"]):
 
@@ -382,8 +390,15 @@ def run():
         os.makedirs(bench_dir, exist_ok=True)
 
         cmake_command = ["cmake", root_dir, "-DMINIPIC_SETUP={}".format(benchmark)]
+
+        # handle implementation
+        if implementation:
+            cmake_command.append(f"-DMINIPIC_IMPLEMENTATION={implementation}")
+
+        # handle compiler
         if compiler:
             cmake_command.append("-DCMAKE_CXX_COMPILER={}".format(compiler))
+
         cmake_command.extend(cmake)
 
         print("")

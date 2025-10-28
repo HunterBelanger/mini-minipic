@@ -44,10 +44,6 @@ def validate_setup(path, setup=None, threshold=1e-10):
 
     print_success(f"Setup {setup} tested with success")
 
-    # force flush to see text on time
-    # especially useful on HPC
-    sys.stdout.flush()
-
 
 def validate():
     parser = ArgumentParser(description="Run a validation script")

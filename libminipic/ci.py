@@ -2,6 +2,7 @@
 
 import math
 import shutil
+import sys
 
 from termcolor import cprint
 
@@ -19,11 +20,13 @@ SEPARATOR_LEVELS = ["=", "-", "."]
 def print_success(message):
     """Print a success message."""
     cprint(message, "green", attrs=["bold"])
+    force_print()
 
 
 def print_failure(message):
     """Print a failure message."""
     cprint(message, "red", attrs=["bold"])
+    force_print()
 
 
 def print_step(message, level=1):
@@ -34,6 +37,14 @@ def print_step(message, level=1):
         "cyan",
         attrs=["bold"],
     )
+    force_print()
+
+
+def force_print():
+    """Force flush to see text on time.
+
+    Especially useful on HPC."""
+    sys.stdout.flush()
 
 
 def evaluate(value, reference, threshold, operator="relative", txt=""):

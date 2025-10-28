@@ -1,6 +1,7 @@
 """Tools for CI."""
 
 import math
+import shutil
 
 from termcolor import cprint
 
@@ -9,6 +10,10 @@ from libminipic.exceptions import (
     ThresholdValueMiniPICError,
     ValueMiniPICError,
 )
+
+TERMINAL_WIDTH = shutil.get_terminal_size().columns
+
+SEPARATOR_LEVELS = ["=", "-", "."]
 
 
 def success(message):
@@ -19,6 +24,16 @@ def success(message):
 def failure(message):
     """Print a failure message."""
     cprint(message, "red", attrs=["bold"])
+
+
+def step(message, level=1):
+    """Print a step message with a line."""
+    sep = SEPARATOR_LEVELS[level]
+    cprint(
+        f"{sep}{sep} {message} {sep}{sep}".ljust(TERMINAL_WIDTH, sep),
+        "cyan",
+        attrs=["bold"],
+    )
 
 
 def evaluate(value, reference, threshold, operator="relative", txt=""):

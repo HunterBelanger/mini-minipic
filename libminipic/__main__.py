@@ -15,9 +15,13 @@ def execute(function):
         function()
         return 0
 
+    except KeyboardInterrupt:
+        failure("Interrumpted by user")
+        return 128
+
     except MiniPICError as exception:
         failure(exception)
-        return 1
+        return 2
 
     except:
         failure("Unexpected error")

@@ -2,9 +2,11 @@
 
 import math
 
-
-def error(txt):
-    raise ValueError("\033[31m" + txt + "\033[39m")
+from libminipic.exceptions import (
+    IncorrectValueMiniPICError,
+    ThresholdValueMiniPICError,
+    ValueMiniPICError,
+)
 
 
 def evaluate(value, reference, threshold, operator="relative", txt=""):
@@ -19,53 +21,54 @@ def evaluate(value, reference, threshold, operator="relative", txt=""):
         flag = value > threshold
 
         if flag:
-            error(txt + ": {} > {} with error {}".format(value, threshold, error_value))
+            raise ThresholdValueMiniPICError(
+                f"{txt}: {value} > {threshold} with error {error_value}"
+            )
 
-    elif operator == "==":
+        return
+
+    if operator == "==":
 
         error_value = math.fabs(value - threshold)
 
         flag = error_value != 0
 
         if flag:
-            error(
-                txt
-                + ": {} not equal to {} with error {}".format(
-                    value, threshold, error_value
-                )
+            raise IncorrectValueMiniPICError(
+                f"{txt}: {value} not equal to {threshold} with value {error_value}"
             )
 
-    elif operator == "relative":
+        return
+
+    if operator == "relative":
 
         if reference == 0:
-            error("Can not evaluate a relative error with reference == 0")
+            raise ValueMiniPICError(
+                "Can not evaluate a relative error with reference == 0"
+            )
 
         error_value = math.fabs((value - reference) / reference)
 
         flag = error_value > threshold
 
         if flag:
-            error(
-                txt
-                + ": {} vs {} with error {} for threshold {}".format(
-                    value, reference, error_value, threshold
-                )
+            raise ThresholdValueMiniPICError(
+                f"{txt}: {value} vs {reference}, with error {error_value} for relative threshold {threshold}"
             )
 
-    elif operator == "absolute":
+        return
+
+    if operator == "absolute":
 
         error_value = math.fabs(value - reference)
 
         flag = error_value > threshold
 
         if flag:
-            error(
-                txt
-                + ": {} vs {} with error {} for threshold {}".format(
-                    value, reference, error_value, threshold
-                )
+            raise ThresholdValueMiniPICError(
+                f"{txt}: {value} vs {reference} with error {error_value} for absolute threshold {threshold}"
             )
 
-    else:
+        return
 
-        error("Operator not recognized")
+    raise ValueMiniPICError(f"Operator not recognized {operator}")

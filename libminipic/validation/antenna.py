@@ -6,6 +6,7 @@ import numpy as np
 
 from libminipic import ci as minipic_ci
 from libminipic import diag as minipic_diag
+from libminipic.exceptions import MissingFileMiniPICError
 
 
 def validate(evaluate=True, threshold=1e-10):
@@ -29,7 +30,7 @@ def validate(evaluate=True, threshold=1e-10):
     # Check that all output files exist
     for file in output_file_list:
         if not (os.path.exists("diags/" + file)):
-            raise ValueError("File {} not generated".format(file))
+            raise MissingFileMiniPICError(f"File {file} not generated")
 
     # ______________________________________________________________________
     # Check scalars

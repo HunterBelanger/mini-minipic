@@ -6,6 +6,7 @@ import numpy as np
 
 from libminipic import ci as minipic_ci
 from libminipic import diag as minipic_diag
+from libminipic.exceptions import MissingFileMiniPICError
 
 
 def validate(evaluate=True, threshold=1e-10):
@@ -47,7 +48,7 @@ def validate(evaluate=True, threshold=1e-10):
     # Check that all output files exist
     for file in output_file_list:
         if not (os.path.exists("diags/" + file)):
-            minipic_ci.error("File {} not generated".format(file))
+            raise MissingFileMiniPICError("File {file} not generated")
 
     # ______________________________________________________________________
     # Check scalars
@@ -476,17 +477,3 @@ def validate(evaluate=True, threshold=1e-10):
                 "relative",
                 "Sum over pz not similar",
             )
-
-
-if __name__ == "__main__":
-    script_name = os.path.basename(__file__)
-    if not (os.path.exists("diags") and os.path.isdir("diags")):
-        print("Directory diags should be present where you run this script")
-        exit()
-
-    print("")
-    print(f"   -> Launch the validation process for {script_name}")
-    print("")
-    validate(evaluate=True)
-    print("")
-    print(f" \033[32mBenchmark `{script_name}` tested with success \033[39m")

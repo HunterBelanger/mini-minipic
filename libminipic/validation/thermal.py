@@ -48,7 +48,7 @@ def validate(evaluate=True, threshold=1e-10):
     # Check that all output files exist
     for file in output_file_list:
         if not (os.path.exists("diags/" + file)):
-            raise MissingFileMiniPICError("File {file} not generated")
+            raise MissingFileMiniPICError(f"File {file} not generated")
 
     # ______________________________________________________________________
     # Check scalars

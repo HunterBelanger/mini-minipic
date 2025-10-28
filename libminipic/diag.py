@@ -79,7 +79,7 @@ def read_3d_diag(path):
     k += 4
 
     if dim != 3:
-        raise ValueMiniPICError("diag dimension should be 3 not {dim}")
+        raise ValueMiniPICError(f"diag dimension should be 3 not {dim}")
 
     data_name = (
         np.array(struct.unpack("16s", content[k : k + 16]))[0].decode("utf-8").strip()
@@ -197,7 +197,7 @@ def read_timers(path):
     Format: json
     """
     if not os.path.isfile(path):
-        raise MissingFileMiniPICError("File {path} does not exist")
+        raise MissingFileMiniPICError(f"File {path} does not exist")
 
     with open(path) as f:
         data = json.load(f)

@@ -80,8 +80,8 @@ Here is a list of the available options:
 | | `--threshold THRESHOLD` | Threshold for the validation |
 | | `--save-timers` | Save the timers for each setup |
 | | `--env VAR1=VAL1,VAR2=VAL2` | Custom environment variables for the execution, separated by commas |
-| | `--cmake-args=ARG` | Set CMake arguments; beware to separate the option and the value by `=` and not a space, as the leading dash would be misinterpreted; values separated by a space |
-| | `--cmake-args-add=ARG` | Append custom CMake arguments; beware to separate the option and the value by `=` and not a space, as the leading dash would be misinterpreted; values separated by a space |
+| | `--cmake-args="-DARG1=VAL1 -DARG2=VAL2"` | Set CMake arguments; beware to separate the option and the value by `=` and not a space, as the leading dash would be misinterpreted; values separated by a space |
+| | `--cmake-args-add="-DARG1=VAL1 -DARG2=VAL2"` | Append custom CMake arguments; beware to separate the option and the value by `=` and not a space, as the leading dash would be misinterpreted; values separated by a space |
 
 ### Configurations
 

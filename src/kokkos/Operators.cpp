@@ -1,17 +1,13 @@
 /* _____________________________________________________________________ */
-//! \file Operators.hpp
+//! \file Operators.cpp
 
 //! \brief contains generic kernels for the particle pusher
 
 /* _____________________________________________________________________ */
 
-#ifndef OPERATORS_H
-#define OPERATORS_H
-
-#include "ElectroMagn.hpp"
-#include "Headers.hpp"
-#include "Particles.hpp"
 #include <Kokkos_Core.hpp>
+
+#include "Operators.hpp"
 
 namespace operators {
 
@@ -80,7 +76,7 @@ double sum_power(ElectroMagn::hostview_t v, const int power) {
 //! \param[in] em  global electromagnetic fields
 //! \param[in] particles  vector of particle species
 // ______________________________________________________________________________
-auto interpolate(ElectroMagn &em, std::vector<Particles> &particles) -> void {
+void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
   const auto inv_dx_m = em.inv_dx_m;
   const auto inv_dy_m = em.inv_dy_m;
   const auto inv_dz_m = em.inv_dz_m;
@@ -255,7 +251,7 @@ auto interpolate(ElectroMagn &em, std::vector<Particles> &particles) -> void {
 //! \param[in] particles  vector of particle species
 //! \param[in] dt time step to use for the pusher
 // ______________________________________________________________________________
-auto push(std::vector<Particles> &particles, double dt) -> void {
+void push(std::vector<Particles> &particles, double dt) {
 
   // For each species
   for (size_t is = 0; is < particles.size(); is++) {
@@ -347,7 +343,7 @@ auto push(std::vector<Particles> &particles, double dt) -> void {
 //! \param[in] particles vector of species Particles
 //! \param[in] dt time step to use for the pusher
 // ______________________________________________________________________________
-auto push_momentum(std::vector<Particles> &particles, double dt) -> void {
+void push_momentum(std::vector<Particles> &particles, double dt) {
 
   // for each species
   for (size_t is = 0; is < particles.size(); is++) {
@@ -430,7 +426,7 @@ auto push_momentum(std::vector<Particles> &particles, double dt) -> void {
 //! \param[in] Params & params - constant global simulation parameters
 //! \param[in] std::vector<Particles> & particles - vector of species Particles
 // _____________________________________________________________________
-auto pushBC(Params &params, std::vector<Particles> &particles) -> void {
+void pushBC(const Params &params, std::vector<Particles> &particles) {
   const double inf_global[3] = {params.inf_x, params.inf_y, params.inf_z};
   const double sup_global[3] = {params.sup_x, params.sup_y, params.sup_z};
 
@@ -521,7 +517,7 @@ auto pushBC(Params &params, std::vector<Particles> &particles) -> void {
 //! \param[in] em electromagnetic fields
 //! \param[in] particles vector of species Particles
 // _______________________________________________________________________
-void project(Params &params, ElectroMagn &em, std::vector<Particles> &particles) {
+void project(const Params &params, ElectroMagn &em, std::vector<Particles> &particles) {
   ElectroMagn::view_t Jx_device = em.Jx_m;
   ElectroMagn::view_t Jy_device = em.Jy_m;
   ElectroMagn::view_t Jz_device = em.Jz_m;
@@ -674,7 +670,7 @@ void project(Params &params, ElectroMagn &em, std::vector<Particles> &particles)
 //! \brief Solve Maxwell equations to compute EM fields
 //! \param params global parameters
 // _______________________________________________________
-auto solve_maxwell(const Params &params, ElectroMagn &em) -> void {
+void solve_maxwell(const Params &params, ElectroMagn &em) {
   const double dt         = params.dt;
   const double dt_over_dx = params.dt * params.inv_dx;
   const double dt_over_dy = params.dt * params.inv_dy;
@@ -765,7 +761,7 @@ auto solve_maxwell(const Params &params, ElectroMagn &em) -> void {
 //! \brief Boundaries condition on the global grid
 //! \param[in] Params & params - global constant parameters
 // _______________________________________________________________
-void currentBC(Params &params, ElectroMagn &em) {
+void currentBC(const Params &params, ElectroMagn &em) {
 
   if (params.boundary_condition == "periodic") {
 
@@ -897,7 +893,7 @@ void currentBC(Params &params, ElectroMagn &em) {
 //! \brief Boundaries condition on the global grid
 //! \param[in] Params & params - global constant parameters
 // _______________________________________________________________
-auto solveBC(Params &params, ElectroMagn &em) -> void {
+void solveBC(const Params &params, ElectroMagn &em) {
   typedef Kokkos::MDRangePolicy<Kokkos::DefaultExecutionSpace, Kokkos::Rank<2>> mdrange_policy;
 
   if (params.boundary_condition == "periodic") {
@@ -1083,11 +1079,11 @@ auto solveBC(Params &params, ElectroMagn &em) -> void {
 //! antenna \param[in] x - (double) position of the antenna \param[in] double t - (double) current
 //! time
 // ____________________________________________________________________________
-auto antenna(Params &params,
+void antenna(const Params &params,
              ElectroMagn &em,
              std::function<double(double, double, double)> profile,
              double x,
-             double t) -> void {
+             double t) {
 
   em.sync(minipic::device, minipic::host);
 
@@ -1113,5 +1109,3 @@ auto antenna(Params &params,
 } // end antenna
 
 } // end namespace operators
-
-#endif // OPERATORS_H

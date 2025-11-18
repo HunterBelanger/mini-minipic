@@ -74,7 +74,7 @@ void iterate(const Params &params, ElectroMagn &em, std::vector<Particles> &part
     particles[is].sync(minipic::host, minipic::device);
   }
 
-#if defined(__MINIPIC_DEBUG__)
+#if defined(MINIPIC_DEBUG)
   // check particles
   for (size_t is = 0; is < particles.size(); ++is) {
     particles[is].check(inf_m[0], sup_m[0],

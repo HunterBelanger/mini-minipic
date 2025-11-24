@@ -157,6 +157,13 @@ def run():
         ),
         default="exercise",
     )
+    parser.add_argument(
+        "-j",
+        "--parallel",
+        help="Number of jobs to use for the compilation, default to 4",
+        type=int,
+        default=4
+    )
     parser.add_argument("-a", "--arguments", help="default arguments", default=None)
     parser.add_argument(
         "--fresh",
@@ -321,6 +328,9 @@ def run():
     except:
         git_branch = "unknown"
 
+    # number of jobs for parallel build
+    jobs = args.parallel
+
     # Get the pipeline id in variable pipeline_id
     pipeline_id = os.environ.get("CI_PIPELINE_ID", "unknown")
 
@@ -404,7 +414,7 @@ def run():
         # ____________________________________________________________________________
         # Compilation
 
-        make_command = ["cmake", "--build", bench_dir, "--parallel", "4"]
+        make_command = ["cmake", "--build", bench_dir, "--parallel", str(jobs)]
 
         print_step("Compilation")
         print_command(make_command)

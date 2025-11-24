@@ -49,8 +49,8 @@ If you want to skip the porting part, you can directly start from the `src/kokko
 - `doc`: documentation pages;
 - `src`: C++ sources:
   - `setups`: headers used to initialize the physical parameters;
-  - `common`: source files common to all backends;
-  - implementation specific folder (`kokkos`, `exercise`, etc.):
+  - `common`: source files common to the project;
+  - implementation specific folder (`kokkos`, `exercise`, you may create yours):
     - `Operators.cpp`: Operator functions;
     - `Managers.cpp`: Functions that call operators for one iteration or for domain initialization;
 - `libminipic`: Python libraries for (mini)miniPIC Python tools and validation scripts:
@@ -64,8 +64,7 @@ If you want to skip the porting part, you can directly start from the `src/kokko
 - [Compilation](./doc/compilation.md)
 - [Setups and how to create them](./doc/setups.md)
 - [Python tools for validation](./doc/python_tools.md)
-- [plot diags](./doc/diags.md)
-- [Timers](./doc/timers.md)
+- [Plot diags](./doc/diags.md)
 
 ## Publications
 

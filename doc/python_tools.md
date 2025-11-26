@@ -52,7 +52,7 @@ Note you have to source the activation script if you are in a new terminal (and 
 
 ## `mini-run` command
 
-The `mini-run` command is used to build miniPIC for a selection of setups, to execute it and to validate its results.
+The `mini-run` command is used to build (mini)miniPIC for a selection of setups, to execute it and to validate its results.
 For validation, `mini-run` calls the same functions as `mini-validate` internally.
 
 You can get some help with:

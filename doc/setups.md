@@ -1,6 +1,6 @@
 # Setups
 
-Input parameters to run a miniPIC simulation must be provided before compiling via a specific source file defining the `setup` function.
+Input parameters to run a (mini)miniPIC simulation must be provided before compiling via a specific source file defining the `setup` function.
 The setup function is then used to initiate global parameters in the `Params` class.
 
 A list of setups can be found in the directory `src/setups/`.

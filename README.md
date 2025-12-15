@@ -36,6 +36,7 @@ If you want to skip the porting part, you can directly start from the `src/kokko
 - You should first finish to port the operators in `src/exercise`;
 - You should port one operator at a time, and running `mini-run` to check if the program is still valid;
 - You may have to take care of data location in the process;
+- You should commit often;
 - When it's done, you should focus on optimization;
 - You should use [Kokkos-tools](https://github.com/kokkos/kokkos-tools) to create regions and breakdown the time spent in the solver;
 - [Nsight Systems](https://docs.nvidia.com/nsight-systems/UserGuide/index.html) may be useful to visualize the regions;

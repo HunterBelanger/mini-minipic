@@ -10,6 +10,7 @@
 ##SBATCH -p gpu
 #SBATCH -p gpua100
 #SBATCH --gres=gpu:1
+#SBATCH --reservation prouveurc_178
 
 set -e
 
@@ -30,6 +31,10 @@ fi
 
 # Launch the test
 
-mini-run -g gpu-a100 -s antenna,beam --save-timers
-#build_gpu=$HOME/builds/build-a100/mini-minipic
-#${build_gpu}/mini-minipic
+#%<<<<<<< HEAD
+#%mini-run -g gpu-a100 -s antenna,beam --save-timers
+#%#build_gpu=$HOME/builds/build-a100/mini-minipic
+#%#${build_gpu}/mini-minipic
+#%=======
+mini-run -g gpu-a100 -s thermal,antenna,beam
+#>>>>>>> 4622eccfcd3c0e29c39353ada2de93c637ff1073

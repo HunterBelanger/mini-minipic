@@ -10,6 +10,7 @@
 ##SBATCH -p gpu
 #SBATCH -p gpua100
 #SBATCH --gres=gpu:1
+#SBATCH --reservation prouveurc_178
 
 set -e
 
@@ -30,4 +31,4 @@ fi
 
 # Launch the test
 
-mini-run -g gpu-a100 -s thermal_heavy
+mini-run -g gpu-a100 -s thermal,antenna,beam

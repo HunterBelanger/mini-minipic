@@ -1,13 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=mini-minipic
-#SBATCH --output=%x.%J.out
-#SBATCH --error=%x.%J.err
+#SBATCH --output=ruche_cpu.%J.out
+#SBATCH --error=ruche_cpu_%J.err
 #SBATCH --nodes=1
 #SBATCH --time=00:15:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=cpu_short
-
 set -e
 
 # Modules
@@ -26,4 +25,8 @@ fi
 
 # Launch the test
 
-mini-run -g cpu-openmp
+#mini-run -g cpu-openmp
+export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/memory-events/libkp_memory_events.so
+export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/simple-kernel-timer/libkp_kernel_timer.so
+
+$HOME/builds/build/mini-minipic/mini-minipic

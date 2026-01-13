@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=mini-minipic
-#SBATCH --output=%x.%J.out
-#SBATCH --error=%x.%J.err
+#SBATCH --output ruche_a100.%J.out
+#SBATCH --error  ruche_a100.%J.err
 #SBATCH --nodes=1
 #SBATCH --time=00:15:00
 #SBATCH --ntasks=1
@@ -30,4 +30,6 @@ fi
 
 # Launch the test
 
-mini-run -g gpu-a100 -s thermal_heavy
+mini-run -g gpu-a100 -s antenna,beam --save-timers
+#build_gpu=$HOME/builds/build-a100/mini-minipic
+#${build_gpu}/mini-minipic

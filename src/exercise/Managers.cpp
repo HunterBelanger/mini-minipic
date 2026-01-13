@@ -19,18 +19,18 @@ void initialize(const Params &params, ElectroMagn &em,
               << "\n"
               << std::endl;
 
-    em.sync(minipic::device, minipic::host);
-    for (std::size_t is = 0; is < particles.size(); ++is) {
-      particles[is].sync(minipic::device, minipic::host);
-    }
+    //em.sync(minipic::device, minipic::host);
+    //for (std::size_t is = 0; is < particles.size(); ++is) {
+    //  particles[is].sync(minipic::device, minipic::host);
+    //}
 
     operators::interpolate(em, particles);
     operators::push_momentum(particles, -0.5 * params.dt);
 
-    em.sync(minipic::host, minipic::device);
-    for (std::size_t is = 0; is < particles.size(); ++is) {
-      particles[is].sync(minipic::host, minipic::device);
-    }
+    //em.sync(minipic::host, minipic::device);
+    //for (std::size_t is = 0; is < particles.size(); ++is) {
+    //  particles[is].sync(minipic::host, minipic::device);
+    //}
   }
 }
 

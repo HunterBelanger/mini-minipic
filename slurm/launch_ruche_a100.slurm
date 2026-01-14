@@ -31,4 +31,6 @@ fi
 
 # Launch the test
 # Maybe remove thermal or --save-timers one day ?
-mini-run --save-timers -g gpu-a100 -s thermal,antenna,beam
+export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/simple-kernel-timer/libkp_kernel_timer.so
+export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/memory-events/libkp_memory_events.so
+mini-run --save-timers -g gpu-a100 -s thermal #,antenna,beam

@@ -78,6 +78,25 @@ void iterate(const Params &params, ElectroMagn &em,
 
 #if defined(MINI_MINIPIC_DEBUG)
   // check particles
+  // copied from SubDomain.hpp
+  //! Boundaries box of the subdomain
+  double inf_m[3];
+  double sup_m[3];
+  // Local parameters
+
+  const int nx_cells_m = params.nx_cells;
+  const int ny_cells_m = params.ny_cells;
+  const int nz_cells_m = params.nz_cells;
+
+  // Compute boundaries box
+  inf_m[0] = params.inf_x ;
+  inf_m[1] = params.inf_y ;
+  inf_m[2] = params.inf_z ;
+
+  sup_m[0] = inf_m[0] + (params.dx * nx_cells_m);
+  sup_m[1] = inf_m[1] + (params.dy * ny_cells_m);
+  sup_m[2] = inf_m[2] + (params.dz * nz_cells_m);
+
   for (std::size_t is = 0; is < particles.size(); ++is) {
     particles[is].check(inf_m[0], sup_m[0], inf_m[1], sup_m[1], inf_m[2],
                         sup_m[2]);

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=mini-minipic
 #SBATCH --output=ruche_cpu.%J.out
-#SBATCH --error=ruche_cpu_%J.err
+#SBATCH --error=ruche_cpu.%J.err
 #SBATCH --nodes=1
 #SBATCH --time=00:15:00
 #SBATCH --ntasks=1
@@ -25,8 +25,11 @@ fi
 
 # Launch the test
 
-#mini-run -g cpu-openmp
 export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/memory-events/libkp_memory_events.so
 export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/simple-kernel-timer/libkp_kernel_timer.so
 
-$HOME/builds/build/mini-minipic/mini-minipic
+config=cpu-serial
+config=cpu-openmp
+opts="--save-timers --cmake-args=\"-DMINI_MINIPIC_DEBUG=ON\""
+opts="--cmake-args=\"-DMINI_MINIPIC_DEBUG=OFF\""
+mini-run $opts -g $config -s thermal #,antenna,beam

@@ -1077,7 +1077,7 @@ void antenna(const Params &params, ElectroMagn &em,
              std::function<double(double, double, double)> profile, double x,
              double t) {
 
-  Kokkos::deep_copy(em.Jx_m, em.Jx_h_m);
+  Kokkos::deep_copy(em.Jz_h_m, em.Jz_m);
   ElectroMagn::hostview_t *J = &em.Jz_h_m;
 
   const int ix = std::floor(
@@ -1098,7 +1098,7 @@ void antenna(const Params &params, ElectroMagn &em,
     }
   }
  
-  Kokkos::deep_copy(em.Jx_h_m, em.Jx_m);
+  Kokkos::deep_copy(em.Jz_m, em.Jz_h_m);
 } // end antenna
 
 } // end namespace operators

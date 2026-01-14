@@ -95,14 +95,22 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
     Particles::view_t x = particles[is].x_m;
     Particles::view_t y = particles[is].y_m;
     Particles::view_t z = particles[is].z_m;
-    
+
+    Particles::view_t Exp = particles[is].Ex_m;
+    Particles::view_t Eyp = particles[is].Ey_m;
+    Particles::view_t Ezp = particles[is].Ez_m;
+
+    Particles::view_t Bxp = particles[is].Bx_m;
+    Particles::view_t Byp = particles[is].By_m;
+    Particles::view_t Bzp = particles[is].Bz_m;
+
     Kokkos::parallel_for(
         n_particles,
         KOKKOS_LAMBDA(const int part) {
       	// Calculate normalized positions
-      	const double ixn = x_m(part) * em.inv_dx;
-      	const double iyn = y_m(part) * em.inv_dy;
-      	const double izn = z_m(part) * em.inv_dz;
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
 
       	// Compute indexes in global primal grid
       	const unsigned int ixp = floor(ixn);
@@ -132,7 +140,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
       	  const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-      	  Ex(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      	  Exp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
 
       	// Ey (p, d, p)
@@ -150,7 +158,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
       	  const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-      	  Ey(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      	  Eyp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
 
       	// Ez (p, p, d)
@@ -168,7 +176,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
       	  const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-      	  Ez(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      	  Ezp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
 
       	// interpolation magnetic field
@@ -187,7 +195,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
       	  const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-      	  Bx(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      	  Bxp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
 
       	// By (d, p, d)
@@ -205,7 +213,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
       	  const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-      	  By(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      	  Byp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
 
       	// Bz (d, d, p)
@@ -223,7 +231,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
       	  const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
 
-      	  Bz(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+      	  Bzp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
     }); // End for each particle
   } // Species loop
@@ -486,6 +494,11 @@ void project(const Params &params, ElectroMagn &em,
     ElectroMagn::view_t Jz = em.Jz_m;
     Particles::view_t w = particles[is].weight_m;
 
+    const auto dt = params.dt;
+    const auto inv_dx = params.inv_dx;
+    const auto inv_dy = params.inv_dy;
+    const auto inv_dz = params.inv_dz;
+
     Kokkos::parallel_for(
         n_particles,
         KOKKOS_LAMBDA(const int part) {
@@ -511,13 +524,13 @@ void project(const Params &params, ElectroMagn &em,
       // current grids have 2 additional ghost cells (1 the min and 1 at the max
       // border) when the direction is primal
       const double posxn =
-          (x(part) - 0.5 * params.dt * vx) * params.inv_dx +
+          (x(part) - 0.5 * dt * vx) * inv_dx +
           1;
       const double posyn =
-          (y(part) - 0.5 * params.dt * vy) * params.inv_dy +
+          (y(part) - 0.5 * dt * vy) * inv_dy +
           1;
       const double poszn =
-          (z(part) - 0.5 * params.dt * vz) * params.inv_dz +
+          (z(part) - 0.5 * dt * vz) * inv_dz +
           1;
 
       // Compute indexes in primal grid

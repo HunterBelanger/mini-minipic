@@ -30,11 +30,5 @@ then
 fi
 
 # Launch the test
-
-#%<<<<<<< HEAD
-#%mini-run -g gpu-a100 -s antenna,beam --save-timers
-#%#build_gpu=$HOME/builds/build-a100/mini-minipic
-#%#${build_gpu}/mini-minipic
-#%=======
-mini-run -g gpu-a100 -s thermal,antenna,beam
-#>>>>>>> 4622eccfcd3c0e29c39353ada2de93c637ff1073
+# Maybe remove thermal or --save-timers one day ?
+mini-run --save-timers -g gpu-a100 -s thermal,antenna,beam

@@ -1077,8 +1077,8 @@ void antenna(const Params &params, ElectroMagn &em,
              std::function<double(double, double, double)> profile, double x,
              double t) {
 
-  using mdrange_policy =
-      Kokkos::MDRangePolicy<Kokkos::DefaultHostExecutionSpace, Kokkos::Rank<2>>;
+  Kokkos::deep_copy(em.Jx_m, em.Jx_h_m);
+  ElectroMagn::hostview_t *J = &em.Jz_h_m;
 
   const int ix = std::floor(
       (x - params.inf_x - em.J_dual_zx_m * 0.5 * params.dx) / params.dx);
@@ -1086,20 +1086,18 @@ void antenna(const Params &params, ElectroMagn &em,
   const double yfs = 0.5 * params.Ly + params.inf_y;
   const double zfs = 0.5 * params.Lz + params.inf_z;
 
-  Kokkos::deep_copy(em.Jx_m, em.Jx_h_m);
-  ElectroMagn::hostview_t J = em.Jz_h_m;
-  Kokkos::parallel_for(
-      "updating antenna",
-      mdrange_policy({0, 0}, {J.extent(1), J.extent(2)}),
-      KOKKOS_LAMBDA(const int iy, const int iz) {
+  for (std::size_t iy = 0; iy < J->extent(1); ++iy) {
+    for (std::size_t iz = 0; iz < J->extent(2); ++iz) {
+
       const double y =
           (iy - em.J_dual_zy_m * 0.5) * params.dy + params.inf_y - yfs;
       const double z =
           (iz - em.J_dual_zz_m * 0.5) * params.dz + params.inf_z - zfs;
 
-      J(ix, iy, iz) = profile(y, z, t);
-  });
-  Kokkos::fence("updated antenna");
+      (*J)(ix, iy, iz) = profile(y, z, t);
+    }
+  }
+ 
   Kokkos::deep_copy(em.Jx_h_m, em.Jx_m);
 } // end antenna
 

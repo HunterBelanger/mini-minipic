@@ -19,18 +19,18 @@ void initialize(const Params &params, ElectroMagn &em,
               << "\n"
               << std::endl;
 
-    //em.sync(minipic::device, minipic::host);
-    //for (std::size_t is = 0; is < particles.size(); ++is) {
-    //  particles[is].sync(minipic::device, minipic::host);
-    //}
+    em.sync(minipic::device, minipic::host);
+    for (std::size_t is = 0; is < particles.size(); ++is) {
+      particles[is].sync(minipic::device, minipic::host);
+    }
 
     operators::interpolate(em, particles);
     operators::push_momentum(particles, -0.5 * params.dt);
 
-    //em.sync(minipic::host, minipic::device);
-    //for (std::size_t is = 0; is < particles.size(); ++is) {
-    //  particles[is].sync(minipic::host, minipic::device);
-    //}
+    em.sync(minipic::host, minipic::device);
+    for (std::size_t is = 0; is < particles.size(); ++is) {
+      particles[is].sync(minipic::host, minipic::device);
+    }
   }
 }
 
@@ -45,10 +45,10 @@ void iterate(const Params &params, ElectroMagn &em,
     DEBUG("  -> stop reset current");
   }
 
-  //em.sync(minipic::device, minipic::host);
-  //for (std::size_t is = 0; is < particles.size(); ++is) {
-  //  particles[is].sync(minipic::device, minipic::host);
-  //}
+  em.sync(minipic::device, minipic::host);
+  for (std::size_t is = 0; is < particles.size(); ++is) {
+    particles[is].sync(minipic::device, minipic::host);
+  }
 
   // Interpolate from global field to particles
   DEBUG("  -> start interpolate ");
@@ -64,10 +64,10 @@ void iterate(const Params &params, ElectroMagn &em,
 
   DEBUG("  -> stop push");
 
-  //em.sync(minipic::host, minipic::device);
-  //for (std::size_t is = 0; is < particles.size(); ++is) {
-  //  particles[is].sync(minipic::host, minipic::device);
-  //}
+  em.sync(minipic::host, minipic::device);
+  for (std::size_t is = 0; is < particles.size(); ++is) {
+    particles[is].sync(minipic::host, minipic::device);
+  }
 
   // Do boundary conditions on global domain
   DEBUG("  -> Patch 0: start pushBC");
@@ -173,10 +173,11 @@ void iterate(const Params &params, ElectroMagn &em,
 
   } // end test params.maxwell_solver
 
-  em.sync(minipic::device, minipic::host);
-  for (std::size_t is = 0; is < particles.size(); ++is) {
-    particles[is].sync(minipic::device, minipic::host);
-  }
+  // do we need to sync back to host ?
+  //em.sync(minipic::device, minipic::host);
+  //for (std::size_t is = 0; is < particles.size(); ++is) {
+  //  particles[is].sync(minipic::device, minipic::host);
+  //}
 
 
 }

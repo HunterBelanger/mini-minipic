@@ -234,8 +234,8 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
       	  Bzp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
       	}
     }); // End for each particle
+    Kokkos::fence("interpolated one species");
   } // Species loop
-  Kokkos::fence("interpolated all species");
 }
 
 //! \brief Move the particle in the space, compute with EM fields interpolate.
@@ -317,8 +317,8 @@ void push(std::vector<Particles> &particles, double dt) {
       y(ip) += my(ip) * dt * gamma_inv;
       z(ip) += mz(ip) * dt * gamma_inv;
     });
+    Kokkos::fence("pushed one species");
   } // Loop on species
-  Kokkos::fence("pushed all species");
 }
 
 //! \brief Push only the momentum.
@@ -477,6 +477,10 @@ void pushBC(const Params &params, std::vector<Particles> &particles) {
 //! \param[in] particles Vector of species particles.
 void project(const Params &params, ElectroMagn &em,
              std::vector<Particles> &particles) {
+
+  Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jx = em.Jx_m;
+  Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jy = em.Jy_m;
+  Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jz = em.Jz_m;
   for (std::size_t is = 0; is < particles.size(); is++) {
 
     const std::size_t n_particles = particles[is].size();
@@ -490,13 +494,6 @@ void project(const Params &params, ElectroMagn &em,
     Particles::view_t my = particles[is].my_m;
     Particles::view_t mz = particles[is].mz_m;
     Particles::view_t w = particles[is].weight_m;
-
-    //ElectroMagn::view_t Jx = em.Jx_m;
-    //ElectroMagn::view_t Jy = em.Jy_m;
-    //ElectroMagn::view_t Jz = em.Jz_m;
-    Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jx = em.Jx_m;
-    Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jy = em.Jy_m;
-    Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jz = em.Jz_m;
 
     const auto dt = params.dt;
     const auto inv_dx = params.inv_dx;
@@ -615,6 +612,8 @@ void project(const Params &params, ElectroMagn &em,
       Jz(ixp + 1, iyp + 1, izd + 1) +=
           (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jzp;
     }); // end for each particles
+    // OpenMP has worked because implicit omp barrier
+    Kokkos::fence("projected one species");
   }   // end for each species
 }
 

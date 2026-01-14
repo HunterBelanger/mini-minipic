@@ -489,10 +489,14 @@ void project(const Params &params, ElectroMagn &em,
     Particles::view_t mx = particles[is].mx_m;
     Particles::view_t my = particles[is].my_m;
     Particles::view_t mz = particles[is].mz_m;
-    ElectroMagn::view_t Jx = em.Jx_m;
-    ElectroMagn::view_t Jy = em.Jy_m;
-    ElectroMagn::view_t Jz = em.Jz_m;
     Particles::view_t w = particles[is].weight_m;
+
+    //ElectroMagn::view_t Jx = em.Jx_m;
+    //ElectroMagn::view_t Jy = em.Jy_m;
+    //ElectroMagn::view_t Jz = em.Jz_m;
+    Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jx = em.Jx_m;
+    Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jy = em.Jy_m;
+    Kokkos::View<double***,Kokkos::MemoryTraits<Kokkos::Atomic> > Jz = em.Jz_m;
 
     const auto dt = params.dt;
     const auto inv_dx = params.inv_dx;

@@ -393,7 +393,7 @@ void push_momentum(std::vector<Particles> &particles, double dt) {
       my(ip) = py;
       mz(ip) = pz;
     }); // end for particles
-
+    Kokkos::fence("pushed momentum for once species");
   } // end for species
 }
 

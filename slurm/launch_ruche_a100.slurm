@@ -33,6 +33,8 @@ fi
 # Maybe remove thermal or --save-timers one day ?
 #export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/simple-kernel-timer/libkp_kernel_timer.so
 #export KOKKOS_TOOLS_LIBS=$HOME/builds/build/kokkos-tools/profiling/memory-events/libkp_memory_events.so
+export KOKKOS_TOOLS_LIBS=$HOME/builds/build-gpu/kokkos-tools/profiling/nvtx-connector/libkp_nvtx_connector.so
 opts="--parallel 16 --save-timers "
 opts="--parallel 16"
-mini-run --prefix "nsys profile" $opts --build-dir gpu-a100 -g gpu-a100 -s thermal,antenna,beam
+#mini-run --prefix "nsys profile" $opts --build-dir gpu-a100 -g gpu-a100 -s thermal,antenna,beam
+mini-run --prefix "ncu -o profile" $opts --build-dir gpu-a100 -g gpu-a100 -s thermal,antenna,beam

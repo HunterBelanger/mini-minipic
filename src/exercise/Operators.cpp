@@ -505,6 +505,11 @@ void project(const Params &params, ElectroMagn &em,
     const auto inv_dy = params.inv_dy;
     const auto inv_dz = params.inv_dz;
 
+    // every so often steps
+    // Kokkos::parallel_sort
+    // où la fonction de sort
+    // c'est p_i < p_j si z_order(p_i) < z_order(p_j)
+
     Kokkos::parallel_for(
 	"project one species",
         n_particles,
@@ -619,8 +624,9 @@ void project(const Params &params, ElectroMagn &em,
           (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jzp;
     }); // end for each particles
     // OpenMP has worked because implicit omp barrier
-    Kokkos::fence("projected one species");
+    //Kokkos::fence("projected one species");
   }   // end for each species
+  Kokkos::fence("projected all species");
 }
 
 //! \brief Solve Maxwell equations to compute EM fields.

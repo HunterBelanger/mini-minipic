@@ -79,6 +79,251 @@ double sum_power(ElectroMagn::view_t v, const int power) {
 //! each particle \param[in] em  global electromagnetic fields \param[in]
 //! particles  vector of particle species
 void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
+  for (std::size_t is = 0; is < particles.size(); is++) {
+
+    const std::size_t n_particles = particles[is].size();
+
+    ElectroMagn::view_t Ex = em.Ex_m;
+    ElectroMagn::view_t Ey = em.Ey_m;
+    ElectroMagn::view_t Ez = em.Ez_m;
+
+    ElectroMagn::view_t Bx = em.Bx_m;
+    ElectroMagn::view_t By = em.By_m;
+    ElectroMagn::view_t Bz = em.Bz_m;
+
+    Particles::view_t x = particles[is].x_m;
+    Particles::view_t y = particles[is].y_m;
+    Particles::view_t z = particles[is].z_m;
+
+    Particles::view_t Exp = particles[is].Ex_m;
+    Particles::view_t Eyp = particles[is].Ey_m;
+    Particles::view_t Ezp = particles[is].Ez_m;
+
+    Particles::view_t Bxp = particles[is].Bx_m;
+    Particles::view_t Byp = particles[is].By_m;
+    Particles::view_t Bzp = particles[is].Bz_m;
+    
+    Kokkos::parallel_for(
+	"interpolate Ex one species",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      	// Calculate normalized positions
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
+
+      	// Compute indexes in global primal grid
+      	const unsigned int ixp = floor(ixn);
+      	const unsigned int iyp = floor(iyn);
+      	const unsigned int izp = floor(izn);
+
+      	// Compute indexes in global dual grid
+      	const unsigned int ixd = floor(ixn + 0.5);
+      	const unsigned int iyd = floor(iyn + 0.5);
+      	const unsigned int izd = floor(izn + 0.5);
+      	
+        // Ex specific code  
+        const double coeffs[3] = {ixn + 0.5, iyn, izn};
+
+      	const double v00 = Ex(ixd, iyp, izp) * (1 - coeffs[0]) +
+      	                   Ex(ixd + 1, iyp, izp) * coeffs[0];
+      	const double v01 = Ex(ixd, iyp, izp + 1) * (1 - coeffs[0]) +
+      	                   Ex(ixd + 1, iyp, izp + 1) * coeffs[0];
+      	const double v10 = Ex(ixd, iyp + 1, izp) * (1 - coeffs[0]) +
+      	                   Ex(ixd + 1, iyp + 1, izp) * coeffs[0];
+      	const double v11 = Ex(ixd, iyp + 1, izp + 1) * (1 - coeffs[0]) +
+      	                   Ex(ixd + 1, iyp + 1, izp + 1) * coeffs[0];
+      	const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+      	const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+
+      	Exp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+    });  
+
+    Kokkos::parallel_for(
+	"interpolate Ey one species",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      	// Calculate normalized positions
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
+
+      	// Compute indexes in global primal grid
+      	const unsigned int ixp = floor(ixn);
+      	const unsigned int iyp = floor(iyn);
+      	const unsigned int izp = floor(izn);
+
+      	// Compute indexes in global dual grid
+      	const unsigned int ixd = floor(ixn + 0.5);
+      	const unsigned int iyd = floor(iyn + 0.5);
+      	const unsigned int izd = floor(izn + 0.5);
+      	
+        // Ey specific code  
+        const double coeffs[3] = {ixn, iyn + 0.5, izn};
+
+      	const double v00 = Ey(ixp, iyd, izp) * (1 - coeffs[0]) +
+      	                   Ey(ixp + 1, iyd, izp) * coeffs[0];
+      	const double v01 = Ey(ixp, iyd, izp + 1) * (1 - coeffs[0]) +
+      	                   Ey(ixp + 1, iyd, izp + 1) * coeffs[0];
+      	const double v10 = Ey(ixp, iyd + 1, izp) * (1 - coeffs[0]) +
+      	                   Ey(ixp + 1, iyd + 1, izp) * coeffs[0];
+      	const double v11 = Ey(ixp, iyd + 1, izp + 1) * (1 - coeffs[0]) +
+      	                   Ey(ixp + 1, iyd + 1, izp + 1) * coeffs[0];
+      	const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+      	const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+
+      	Eyp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+    });
+
+    Kokkos::parallel_for(
+	"interpolate Ez one species",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      	// Calculate normalized positions
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
+
+      	// Compute indexes in global primal grid
+      	const unsigned int ixp = floor(ixn);
+      	const unsigned int iyp = floor(iyn);
+      	const unsigned int izp = floor(izn);
+
+      	// Compute indexes in global dual grid
+      	const unsigned int ixd = floor(ixn + 0.5);
+      	const unsigned int iyd = floor(iyn + 0.5);
+      	const unsigned int izd = floor(izn + 0.5);
+      	
+        // Ez specific code  
+        const double coeffs[3] = {ixn, iyn, izn + 0.5};
+
+        const double v00 = Ez(ixp, iyp, izd) * (1 - coeffs[0]) +
+                           Ez(ixp + 1, iyp, izd) * coeffs[0];
+        const double v01 = Ez(ixp, iyp, izd + 1) * (1 - coeffs[0]) +
+                           Ez(ixp + 1, iyp, izd + 1) * coeffs[0];
+        const double v10 = Ez(ixp, iyp + 1, izd) * (1 - coeffs[0]) +
+                           Ez(ixp + 1, iyp + 1, izd) * coeffs[0];
+        const double v11 = Ez(ixp, iyp + 1, izd + 1) * (1 - coeffs[0]) +
+                           Ez(ixp + 1, iyp + 1, izd + 1) * coeffs[0];
+        const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+        const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+
+        Ezp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];   
+    });
+
+    Kokkos::parallel_for(
+	"interpolate Bx one species",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      	// Calculate normalized positions
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
+
+      	// Compute indexes in global primal grid
+      	const unsigned int ixp = floor(ixn);
+      	const unsigned int iyp = floor(iyn);
+      	const unsigned int izp = floor(izn);
+
+      	// Compute indexes in global dual grid
+      	const unsigned int ixd = floor(ixn + 0.5);
+      	const unsigned int iyd = floor(iyn + 0.5);
+      	const unsigned int izd = floor(izn + 0.5);
+      	
+        // Bx specific code  
+        const double coeffs[3] = {ixn, iyn + 0.5, izn + 0.5};
+
+      	const double v00 = Bx(ixp, iyd, izd) * (1 - coeffs[0]) +
+      	                   Bx(ixp + 1, iyd, izd) * coeffs[0];
+      	const double v01 = Bx(ixp, iyd, izd + 1) * (1 - coeffs[0]) +
+      	                   Bx(ixp + 1, iyd, izd + 1) * coeffs[0];
+      	const double v10 = Bx(ixp, iyd + 1, izd) * (1 - coeffs[0]) +
+      	                   Bx(ixp + 1, iyd + 1, izd) * coeffs[0];
+      	const double v11 = Bx(ixp, iyd + 1, izd + 1) * (1 - coeffs[0]) +
+      	                   Bx(ixp + 1, iyd + 1, izd + 1) * coeffs[0];
+      	const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+      	const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+
+      	Bxp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+    });
+    
+    Kokkos::parallel_for(
+	"interpolate By one species",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      	// Calculate normalized positions
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
+
+      	// Compute indexes in global primal grid
+      	const unsigned int ixp = floor(ixn);
+      	const unsigned int iyp = floor(iyn);
+      	const unsigned int izp = floor(izn);
+
+      	// Compute indexes in global dual grid
+      	const unsigned int ixd = floor(ixn + 0.5);
+      	const unsigned int iyd = floor(iyn + 0.5);
+      	const unsigned int izd = floor(izn + 0.5);
+      	
+        // By specific code  
+        const double coeffs[3] = {ixn + 0.5, iyn, izn + 0.5};
+
+      	const double v00 = By(ixd, iyp, izd) * (1 - coeffs[0]) +
+      	                   By(ixd + 1, iyp, izd) * coeffs[0];
+      	const double v01 = By(ixd, iyp, izd + 1) * (1 - coeffs[0]) +
+      	                   By(ixd + 1, iyp, izd + 1) * coeffs[0];
+      	const double v10 = By(ixd, iyp + 1, izd) * (1 - coeffs[0]) +
+      	                   By(ixd + 1, iyp + 1, izd) * coeffs[0];
+      	const double v11 = By(ixd, iyp + 1, izd + 1) * (1 - coeffs[0]) +
+      	                   By(ixd + 1, iyp + 1, izd + 1) * coeffs[0];
+      	const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+      	const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+
+      	Byp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+    });
+
+    Kokkos::parallel_for(
+	"interpolate Bz one species",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      	// Calculate normalized positions
+      	const double ixn = x(part) * em.inv_dx_m;
+      	const double iyn = y(part) * em.inv_dy_m;
+      	const double izn = z(part) * em.inv_dz_m;
+
+      	// Compute indexes in global primal grid
+      	const unsigned int ixp = floor(ixn);
+      	const unsigned int iyp = floor(iyn);
+      	const unsigned int izp = floor(izn);
+
+      	// Compute indexes in global dual grid
+      	const unsigned int ixd = floor(ixn + 0.5);
+      	const unsigned int iyd = floor(iyn + 0.5);
+      	const unsigned int izd = floor(izn + 0.5);
+      	
+        // Bz specific code  
+	const double coeffs[3] = {ixn + 0.5, iyn + 0.5, izn};
+
+      	const double v00 = Bz(ixd, iyd, izp) * (1 - coeffs[0]) +
+      	                   Bz(ixd + 1, iyd, izp) * coeffs[0];
+      	const double v01 = Bz(ixd, iyd, izp + 1) * (1 - coeffs[0]) +
+      	                   Bz(ixd + 1, iyd, izp + 1) * coeffs[0];
+      	const double v10 = Bz(ixd, iyd + 1, izp) * (1 - coeffs[0]) +
+      	                   Bz(ixd + 1, iyd + 1, izp) * coeffs[0];
+      	const double v11 = Bz(ixd, iyd + 1, izp + 1) * (1 - coeffs[0]) +
+      	                   Bz(ixd + 1, iyd + 1, izp + 1) * coeffs[0];
+      	const double v0 = v00 * (1 - coeffs[1]) + v10 * coeffs[1];
+      	const double v1 = v01 * (1 - coeffs[1]) + v11 * coeffs[1];
+
+      	Bzp(part) = v0 * (1 - coeffs[2]) + v1 * coeffs[2];
+    });
+  }
+  Kokkos::fence("interpolated everything");
+}
+
+/*
+void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
 
   for (std::size_t is = 0; is < particles.size(); is++) {
 
@@ -238,6 +483,7 @@ void interpolate(ElectroMagn &em, std::vector<Particles> &particles) {
     Kokkos::fence("interpolated one species");
   } // Species loop
 }
+*/
 
 //! \brief Move the particle in the space, compute with EM fields interpolate.
 //! \param[in] particles Vector of particle species.

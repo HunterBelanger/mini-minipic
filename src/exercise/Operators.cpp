@@ -511,7 +511,7 @@ void project(const Params &params, ElectroMagn &em,
     // c'est p_i < p_j si z_order(p_i) < z_order(p_j)
 
     Kokkos::parallel_for(
-	"project one species",
+	"project one species (Jx)",
         n_particles,
         KOKKOS_LAMBDA(const int part) {
       // Delete if already compute by Pusher
@@ -527,8 +527,6 @@ void project(const Params &params, ElectroMagn &em,
       const double vz = mz(part) * gamma_inv;
 
       const double Jxp = vx * charge_weight;
-      const double Jyp = vy * charge_weight;
-      const double Jzp = vz * charge_weight;
 
       // Calculate normalized positions
       // We come back 1/2 time step back in time for the position because of the
@@ -581,6 +579,57 @@ void project(const Params &params, ElectroMagn &em,
       Jx(ixd + 1, iyp + 1, izp + 1) +=
           (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jxp;
 
+    }); // end for each particles
+    // OpenMP has worked because implicit omp barrier
+    //Kokkos::fence("projected one species");
+    Kokkos::parallel_for(
+	"project one species (Jy)",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      // Delete if already compute by Pusher
+      const double charge_weight =
+          inv_cell_volume_x_q * w(part);
+
+      const double gamma_inv =
+          1 / std::sqrt(1 + (mx(part) * mx(part) + my(part) * my(part) +
+                             mz(part) * mz(part)));
+
+      const double vx = mx(part) * gamma_inv;
+      const double vy = my(part) * gamma_inv;
+      const double vz = mz(part) * gamma_inv;
+
+      const double Jyp = vy * charge_weight;
+
+      // Calculate normalized positions
+      // We come back 1/2 time step back in time for the position because of the
+      // leap frog scheme As a consequence, we also have `+ 1` because the
+      // current grids have 2 additional ghost cells (1 the min and 1 at the max
+      // border) when the direction is primal
+      const double posxn =
+          (x(part) - 0.5 * dt * vx) * inv_dx +
+          1;
+      const double posyn =
+          (y(part) - 0.5 * dt * vy) * inv_dy +
+          1;
+      const double poszn =
+          (z(part) - 0.5 * dt * vz) * inv_dz +
+          1;
+
+      // Compute indexes in primal grid
+      const int ixp = (int)(std::floor(posxn));
+      const int iyp = (int)(std::floor(posyn));
+      const int izp = (int)(std::floor(poszn));
+
+      // Compute indexes in dual grid
+      const int ixd = (int)std::floor(posxn - 0.5);
+      const int iyd = (int)std::floor(posyn - 0.5);
+      const int izd = (int)std::floor(poszn - 0.5);
+
+      // Projection particle on currant field
+      // Compute interpolation coeff, p = primal, d = dual
+
+      double coeffs[3];
+
       coeffs[0] = posxn - ixp;
       coeffs[1] = posyn - 0.5 - iyd;
       coeffs[2] = poszn - izp;
@@ -601,6 +650,57 @@ void project(const Params &params, ElectroMagn &em,
           (coeffs[0]) * (coeffs[1]) * (1 - coeffs[2]) * Jyp;
       Jy(ixp + 1, iyd + 1, izp + 1) +=
           (coeffs[0]) * (coeffs[1]) * (coeffs[2]) * Jyp;
+
+    }); // end for each particles
+    // OpenMP has worked because implicit omp barrier
+    //Kokkos::fence("projected one species");
+    Kokkos::parallel_for(
+	"project one species (Jz)",
+        n_particles,
+        KOKKOS_LAMBDA(const int part) {
+      // Delete if already compute by Pusher
+      const double charge_weight =
+          inv_cell_volume_x_q * w(part);
+
+      const double gamma_inv =
+          1 / std::sqrt(1 + (mx(part) * mx(part) + my(part) * my(part) +
+                             mz(part) * mz(part)));
+
+      const double vx = mx(part) * gamma_inv;
+      const double vy = my(part) * gamma_inv;
+      const double vz = mz(part) * gamma_inv;
+
+      const double Jzp = vz * charge_weight;
+
+      // Calculate normalized positions
+      // We come back 1/2 time step back in time for the position because of the
+      // leap frog scheme As a consequence, we also have `+ 1` because the
+      // current grids have 2 additional ghost cells (1 the min and 1 at the max
+      // border) when the direction is primal
+      const double posxn =
+          (x(part) - 0.5 * dt * vx) * inv_dx +
+          1;
+      const double posyn =
+          (y(part) - 0.5 * dt * vy) * inv_dy +
+          1;
+      const double poszn =
+          (z(part) - 0.5 * dt * vz) * inv_dz +
+          1;
+
+      // Compute indexes in primal grid
+      const int ixp = (int)(std::floor(posxn));
+      const int iyp = (int)(std::floor(posyn));
+      const int izp = (int)(std::floor(poszn));
+
+      // Compute indexes in dual grid
+      const int ixd = (int)std::floor(posxn - 0.5);
+      const int iyd = (int)std::floor(posyn - 0.5);
+      const int izd = (int)std::floor(poszn - 0.5);
+
+      // Projection particle on currant field
+      // Compute interpolation coeff, p = primal, d = dual
+
+      double coeffs[3];
 
       coeffs[0] = posxn - ixp;
       coeffs[1] = posyn - iyp;

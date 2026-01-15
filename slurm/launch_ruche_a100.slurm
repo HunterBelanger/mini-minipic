@@ -3,7 +3,7 @@
 #SBATCH --output ruche_a100.%J.out
 #SBATCH --error  ruche_a100.%J.err
 #SBATCH --nodes=1
-#SBATCH --time=00:15:00
+#SBATCH --time=1:15:0
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 ##SBATCH -p gpu_test
@@ -36,5 +36,8 @@ fi
 export KOKKOS_TOOLS_LIBS=$HOME/builds/build-gpu/kokkos-tools/profiling/nvtx-connector/libkp_nvtx_connector.so
 opts="--parallel 16 --save-timers "
 opts="--parallel 16"
-#mini-run --prefix "nsys profile" $opts --build-dir gpu-a100 -g gpu-a100 -s thermal,antenna,beam
-mini-run --prefix "ncu -o profile" $opts --build-dir gpu-a100 -g gpu-a100 -s thermal,antenna,beam
+#,antenna,beam
+setups="thermal_heavy"
+setups="thermal"
+mini-run --prefix "nsys profile" $opts --build-dir gpu-a100 -g gpu-a100 -s $setups
+#mini-run --prefix "ncu -o profile" $opts --build-dir gpu-a100 -g gpu-a100 -s $setups

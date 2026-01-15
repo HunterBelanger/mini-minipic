@@ -565,8 +565,8 @@ void push(std::vector<Particles> &particles, double dt) {
       y(ip) += my(ip) * dt * gamma_inv;
       z(ip) += mz(ip) * dt * gamma_inv;
     });
-    Kokkos::fence("pushed one species");
   } // Loop on species
+  Kokkos::fence("pushed all species");
 }
 
 //! \brief Push only the momentum.
@@ -642,8 +642,8 @@ void push_momentum(std::vector<Particles> &particles, double dt) {
       my(ip) = py;
       mz(ip) = pz;
     }); // end for particles
-    Kokkos::fence("pushed momentum for once species");
   } // end for species
+  Kokkos::fence("pushed momentum for all species");
 }
 
 //! \brief Boundaries condition on the particles, periodic
@@ -679,10 +679,8 @@ void pushBC(const Params &params, std::vector<Particles> &particles) {
             }
           } // End loop on particles
       );
-
-      Kokkos::fence();
-
     } // End loop on species
+    Kokkos::fence("Fence pushBC Periodic all specices");
 
     // Reflective conditions
   } else if (params.boundary_condition_code == 2) {
@@ -715,10 +713,8 @@ void pushBC(const Params &params, std::vector<Particles> &particles) {
             }
           } // End loop on particles
       );
-
-      Kokkos::fence();
-
     } // End loop on species
+    Kokkos::fence("Fence pushBC Reflective all specices");
   }   // if type of conditions
 }
 

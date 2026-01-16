@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_SIMD.hpp>
 
 #include "Operators.hpp"
 
@@ -1086,18 +1087,22 @@ void antenna(const Params &params, ElectroMagn &em,
   Kokkos::deep_copy(em.Jz_h_m, em.Jz_m);
   ElectroMagn::hostview_t J = em.Jz_h_m;
 
+  using simd_type = Kokkos::Experimental::simd<double>;
+
   const int ix = std::floor(
       (x - params.inf_x - em.J_dual_zx_m * 0.5 * params.dx) / params.dx);
 
   const double yfs = 0.5 * params.Ly + params.inf_y;
   const double zfs = 0.5 * params.Lz + params.inf_z;
+
+  /*
+   * Tried paralleizing the antenna calcuation on host with OpenMP,
+   * but that actually led to FAR slower run times on antenna_heavy.
   const auto dy = params.dy; 
   const auto dz = params.dz;
   const auto inf_y = params.inf_y;
   const auto inf_z = params.inf_z;
-
   typedef Kokkos::MDRangePolicy<Kokkos::DefaultHostExecutionSpace, Kokkos::Rank<2>> mdrange_policy;
-
   Kokkos::parallel_for(
     "antenna",
     mdrange_policy({0,0}, {J.extent(1), J.extent(2)}),
@@ -1110,6 +1115,37 @@ void antenna(const Params &params, ElectroMagn &em,
       J(ix, iy, iz) = profile(y, z, t);
     }
   );
+  */
+  
+  for (std::size_t iy = 0; iy < J.extent(1); ++iy) {
+    for (std::size_t iz = 0; iz < J.extent(2); ++iz) {
+      const double y =
+          (iy - em.J_dual_zy_m * 0.5) * params.dy + params.inf_y - yfs;
+      const double z =
+          (iz - em.J_dual_zz_m * 0.5) * params.dz + params.inf_z - zfs;
+
+      J(ix, iy, iz) = profile(y, z, t);
+    }
+  }
+  
+  /*
+   * Tried SIMD, but profile won't accept SIMD types, so RIP (╯°□°)╯︵ ┻━┻
+   *
+  typedef Kokkos::MDRangePolicy<Kokkos::DefaultHostExecutionSpace, Kokkos::Rank<2>> mdrange_policy;
+  Kokkos::parallel_for(
+    "antenna",
+    mdrange_policy({0,0}, {J.extent(1), J.extent(2)/simd_type::size()}),
+    [=] (const int iy, const int iz) {
+      const double y =
+          (iy - em.J_dual_zy_m * 0.5) * dy + inf_y - yfs;
+      const double z =
+          (iz - em.J_dual_zz_m * 0.5) * dz + inf_z - zfs;
+
+      simd_type Jsmd(&J(ix, iy, iz), Kokkos::Experimental::simd_flag_default);
+      Jsmd = profile(y, z, t);
+    }
+  );
+  */
 
   Kokkos::deep_copy(em.Jz_m, em.Jz_h_m);
 } // end antenna
